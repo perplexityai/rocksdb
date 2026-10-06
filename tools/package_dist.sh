@@ -31,7 +31,7 @@ for triple in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu aarch64-apple-d
   mkdir -p "$stage/licenses"
   while IFS='|' read -r dependency target license; do
     source_root=$(bazel cquery -c opt "$target" --output=starlark \
-      --starlark:expr=target.label.workspace_root)
+      --starlark:expr=target.label.workspace_root | sort -u)
     install -m644 "$execroot/$source_root/$license" "$stage/licenses/$dependency.txt"
   done <<'LICENSES'
 bzip2|@bzip2//:bz2|LICENSE
