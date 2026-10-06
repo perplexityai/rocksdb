@@ -34,11 +34,13 @@ output directories.
 
 No host-specific CPU instructions are enabled. Snappy, zlib, bzip2, LZ4/LZ4HC,
 and Zstd are compiled from pinned BCR sources through the consumer toolchain;
-no host compression libraries or configure probes are used. RocksDB links the
-BCR jemalloc overlay. Linux uses its standard symbols; Darwin uses `_rjem_`
-symbols without replacing the system allocator. `@rocksdb//:jemalloc` exposes
-the same configured allocator for consumers such as Rust's `tikv-jemalloc-sys`
-(which must set `--cfg=prefixed` on Darwin). io_uring and plugins remain disabled.
+no host compression libraries are used. The optional liburing dependency
+configures against the selected target C toolchain. Linux consumers can opt into
+io_uring with `--@rocksdb//:with_liburing`. Plugins remain disabled.
+RocksDB links the BCR jemalloc overlay. Linux uses its standard symbols;
+Darwin uses `_rjem_` symbols without replacing the system allocator.
+`@rocksdb//:jemalloc` exposes the same configured allocator for consumers such as
+Rust's `tikv-jemalloc-sys` (which must set `--cfg=prefixed` on Darwin).
 
 Run the smoke executable on a matching Linux or macOS host with a fresh database
 path. It checks jemalloc linkage (and its nodump allocator on Linux), codec availability,
@@ -128,3 +130,33 @@ independently of the development harness version.
 ## License
 
 Overlay scaffolding is Apache-2.0. Upstream RocksDB keeps its own licensing.
+
+## Upstream tests and feature flags
+
+The public flags `with_bzip2`, `with_lz4`, `with_zlib`, `with_zstd`, and
+`with_liburing` retain the previous BCR configuration interface. Compression
+codecs default to enabled, matching this overlay's distributions; `with_snappy`
+can also disable Snappy. Linux io_uring remains opt-in.
+
+Upstream GoogleTest targets and their shared test library are available in the
+registry module. Run them without `-c opt`, because RocksDB's assertion-enabled
+test hooks are removed by `NDEBUG` in optimized builds:
+
+```sh
+bazel test --registry=file://$(realpath ../../bcr) \
+  --registry=https://bcr.bazel.build \
+  --test_arg='--gtest_filter=-PrefetchTest/PrefetchTest.Basic/*' @rocksdb//:all
+```
+
+The previous overlay's known test exclusions are retained. BCR presubmit tests
+Linux with the default codecs, io_uring enabled, and compression disabled, plus
+macOS with its existing prefetch-test exclusion.
+The tests share the library's feature macros so they exercise the enabled codecs.
+A test-only patch allows an empty dictionary-compression parameter list when all
+codecs are disabled.
+On Linux, four `PrefetchTest.Basic` cases are filtered from presubmit: v11.8.1
+expects 2 MiB compaction reads but observes adaptive 256 KiB reads. The target
+remains available, and its other 102 cases still run.
+Bazel can retry the compaction service target after an intermittent checksum
+failure during background compactions. The full-codec table target has a
+one-hour timeout for slower CI runners.
