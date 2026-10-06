@@ -1,0 +1,52 @@
+diff --git a/MODULE.bazel b/MODULE.bazel
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -6,6 +6,8 @@ module(
+ )
+
+ bazel_dep(name = "bazel_lib", version = "3.2.2")
++bazel_dep(name = "gawk", version = "5.3.2.bcr.1")
+ bazel_dep(name = "bazel_skylib", version = "1.8.2")
+ bazel_dep(name = "libunwind", version = "1.8.3")
++bazel_dep(name = "llvm", version = "0.8.11")
+ bazel_dep(name = "platforms", version = "0.0.11")
+diff --git a/include/jemalloc/internal/private_namespace.bzl b/include/jemalloc/internal/private_namespace.bzl
+--- a/include/jemalloc/internal/private_namespace.bzl
++++ b/include/jemalloc/internal/private_namespace.bzl
+@@ -34,14 +34,15 @@ def _private_namespace_impl(ctx):
+
+     ctx.actions.run_shell(
+         inputs = depset(inputs, transitive = [cc_toolchain.all_files]),
+         outputs = [output_symbols],
+-        command = "{nm} -a {inputs} | awk -f {script} > {output}".format(
++        command = "nm_output=\"$(\"{nm}\" -a {inputs})\" && printf '%s\\n' \"$nm_output\" | \"{awk}\" -f \"{script}\" > \"{output}\"".format(
++            awk = ctx.executable._awk.path,
+-            nm = cc_toolchain.nm_executable,
++            nm = ctx.executable._nm.path,
+             inputs = " ".join([input.path for input in inputs]),
+             script = output_awk.path,
+             output = output_symbols.path,
+         ),
+-        tools = [output_awk],
++        tools = [ctx.executable._awk, ctx.executable._nm, output_awk],
+         mnemonic = "PrivateNamespaceNM",
+     )
+
+@@ -91,6 +92,17 @@ private_namespace = rule(
+             default = [],
+         ),
+         "_prefix": attr.label(default = "//settings/flags:jemalloc_prefix"),
++        "_awk": attr.label(
++            default = "@gawk//:gawk",
++            cfg = "exec",
++            executable = True,
++        ),
+         "_cc_toolchain": attr.label(default = Label("@rules_cc//cc:current_cc_toolchain")),
++        "_nm": attr.label(
++            default = "@llvm//tools:llvm-nm",
++            allow_single_file = True,
++            cfg = "exec",
++            executable = True,
++        ),
+         "_constraint_macos": attr.label(default = "@platforms//os:macos", cfg = "target"),
+         "_private_namespace_sh": attr.label(

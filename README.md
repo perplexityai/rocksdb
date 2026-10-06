@@ -34,11 +34,15 @@ output directories.
 
 No host-specific CPU instructions are enabled. Snappy, zlib, bzip2, LZ4/LZ4HC,
 and Zstd are compiled from pinned BCR sources through the consumer toolchain;
-no host compression libraries or configure probes are used. io_uring, jemalloc,
-and plugins are currently disabled.
+no host compression libraries or configure probes are used. RocksDB links the
+BCR jemalloc overlay. Linux uses its standard symbols; Darwin uses `_rjem_`
+symbols without replacing the system allocator. `@rocksdb//:jemalloc` exposes
+the same configured allocator for consumers such as Rust's `tikv-jemalloc-sys`
+(which must set `--cfg=prefixed` on Darwin). io_uring and plugins remain disabled.
 
 Run the smoke executable on a matching Linux or macOS host with a fresh database
-path. It checks codec availability and verifies writing, SST flush, close/reopen,
+path. It checks jemalloc linkage (and its nodump allocator on Linux), codec availability,
+and writing, SST flush, close/reopen,
 reading, deletion, and cleanup with each supported compression codec:
 
 ```sh
@@ -69,6 +73,9 @@ is needed. Select this overlay through its registry when consuming it.
 checksum, overlay file checksums, and Linux x86_64/ARM64 and macOS ARM64 presubmit matrix.
 The published module uses the consumer's C++ toolchain; LLVM toolchains are
 registered only in the development harness. The overlay supports Linux and macOS.
+The development harness patches jemalloc's build-time `nm` and `awk` actions
+for hermetic LLVM; consumers using that toolchain need the same fixes until
+they reach the jemalloc BCR module.
 It is checked in locally and has not been published to the public BCR.
 
 To validate it through the local registry:

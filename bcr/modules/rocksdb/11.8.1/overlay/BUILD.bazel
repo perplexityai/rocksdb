@@ -1,5 +1,6 @@
 load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load(":jemalloc.bzl", "darwin_jemalloc")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -420,6 +421,7 @@ cc_library(
     linkstatic = True,
     local_defines = [
         "ROCKSDB_USE_RTTI",
+        "ROCKSDB_JEMALLOC",
         "BZIP2",
         "LZ4",
         "SNAPPY",
@@ -456,10 +458,24 @@ cc_library(
         exclude = ["include/**/*.h"],
     ),
     deps = [
+        ":jemalloc",
         "@bzip2//:bz2",
         "@lz4//:lz4_hc",
         "@snappy",
         "@zlib",
         "@zstd",
     ],
+)
+
+alias(
+    name = "jemalloc",
+    actual = select({
+        ":macos": ":darwin_jemalloc",
+        "//conditions:default": "@jemalloc",
+    }),
+)
+
+darwin_jemalloc(
+    name = "darwin_jemalloc",
+    actual = "@jemalloc",
 )
