@@ -34,8 +34,10 @@ output directories.
 
 No host-specific CPU instructions are enabled. Snappy, zlib, bzip2, LZ4/LZ4HC,
 and Zstd are compiled from pinned BCR sources through the consumer toolchain;
-no host compression libraries or configure probes are used. io_uring, jemalloc,
-and plugins are currently disabled.
+no host compression libraries are used. The optional liburing dependency
+configures against the selected target C toolchain. Jemalloc and plugins are
+currently disabled. Linux consumers can opt into io_uring with
+`--@rocksdb//:with_liburing`.
 
 Run the smoke executable on a matching Linux or macOS host with a fresh database
 path. It checks codec availability and verifies writing, SST flush, close/reopen,
@@ -121,3 +123,23 @@ independently of the development harness version.
 ## License
 
 Overlay scaffolding is Apache-2.0. Upstream RocksDB keeps its own licensing.
+
+## Upstream tests and feature flags
+
+The public flags `with_bzip2`, `with_lz4`, `with_zlib`, `with_zstd`, and
+`with_liburing` retain the previous BCR configuration interface. Compression
+codecs default to enabled, matching this overlay's distributions; `with_snappy`
+can also disable Snappy. Linux io_uring remains opt-in.
+
+Upstream GoogleTest targets and their shared test library are available in the
+registry module. Run them without `-c opt`, because RocksDB's assertion-enabled
+test hooks are removed by `NDEBUG` in optimized builds:
+
+```sh
+bazel test --registry=file://$(realpath ../../bcr) \
+  --registry=https://bcr.bazel.build @rocksdb//:all
+```
+
+The previous overlay's known test exclusions are retained. BCR presubmit tests
+Linux with the default codecs, io_uring enabled, and compression disabled, plus
+macOS with its existing prefetch-test exclusion.

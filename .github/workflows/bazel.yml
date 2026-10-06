@@ -44,6 +44,18 @@ jobs:
             --registry=https://bcr.bazel.build \
             --incompatible_autoload_externally=+@rules_cc \
             @rocksdb//:rocksdb //:smoke_test
+      - name: Test upstream RocksDB targets
+        working-directory: tests/bcr
+        shell: bash
+        run: |
+          set -euo pipefail
+          bazel test \
+            --registry="file://$GITHUB_WORKSPACE/bcr" \
+            --registry=https://bcr.bazel.build \
+            --incompatible_autoload_externally=+@rules_cc \
+            --test_output=errors \
+            @rocksdb//:util_coding_test @rocksdb//:util_crc32c_test \
+            @rocksdb//:db_db_basic_test @rocksdb//:env_env_basic_test
 
   build:
     name: Build Linux amd64 and ARM64 distributions
