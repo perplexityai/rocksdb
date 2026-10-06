@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 (2026-10-06)
+
+## What's Changed
+* fix: namespace BCR module as pplx_rocksdb by @longlho in https://github.com/perplexityai/rocksdb/pull/5
+* feat: enable hermetic RocksDB compression codecs by @longlho in https://github.com/perplexityai/rocksdb/pull/7
+
+
+**Full Changelog**: https://github.com/perplexityai/rocksdb/compare/v0.1.0...v0.2.0
+
 ## 0.1.0 (2026-10-06)
 
 ## What's Changed
