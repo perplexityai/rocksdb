@@ -55,6 +55,7 @@ jobs:
             --incompatible_autoload_externally=+@rules_cc \
             --test_output=errors \
             @rocksdb//:util_coding_test @rocksdb//:util_crc32c_test \
+            @rocksdb//:util_compression_test \
             @rocksdb//:db_db_basic_test @rocksdb//:env_env_basic_test
 
   build:

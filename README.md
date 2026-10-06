@@ -151,6 +151,9 @@ bazel test --registry=file://$(realpath ../../bcr) \
 The previous overlay's known test exclusions are retained. BCR presubmit tests
 Linux with the default codecs, io_uring enabled, and compression disabled, plus
 macOS with its existing prefetch-test exclusion.
+The tests share the library's feature macros so they exercise the enabled codecs.
+A test-only patch allows an empty dictionary-compression parameter list when all
+codecs are disabled.
 On Linux, four `PrefetchTest.Basic` cases are filtered from presubmit: v11.8.1
 expects 2 MiB compaction reads but observes adaptive 256 KiB reads. The target
 remains available, and its other 102 cases still run.

@@ -19,7 +19,10 @@ http_archive(
         "jemalloc.bzl": "//bcr/modules/rocksdb/11.8.1/overlay:jemalloc.bzl",
     },
     patch_args = ["-p1"],
-    patches = ["//:bcr/modules/rocksdb/11.8.1/patches/snappy_includes.patch"],
+    patches = [
+        "//:bcr/modules/rocksdb/11.8.1/patches/compression_test_without_codecs.patch",
+        "//:bcr/modules/rocksdb/11.8.1/patches/snappy_includes.patch",
+    ],
     sha256 = "618d9726a7cb1cf4ce034f4cdca49de98aa64867dda06b91371a791ae8921aff",
     strip_prefix = "rocksdb-11.8.1",
     urls = ["https://github.com/facebook/rocksdb/archive/refs/tags/v11.8.1.tar.gz"],
