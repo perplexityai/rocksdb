@@ -43,7 +43,7 @@ jobs:
             --registry="file://$GITHUB_WORKSPACE/bcr" \
             --registry=https://bcr.bazel.build \
             --incompatible_autoload_externally=+@rules_cc \
-            @rocksdb//:rocksdb @rocksdb//:pplx_rocksdb //:smoke_test
+            @rocksdb//:rocksdb //:smoke_test
 
   build:
     name: Build Linux amd64 and ARM64 distributions
