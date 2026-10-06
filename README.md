@@ -20,6 +20,11 @@ bazel build -c opt //:rocksdb-smoke-aarch64-apple-darwin
 bazel build -c opt //:rocksdb-smoke-x86_64-unknown-linux-gnu
 ```
 
+The distribution targets use `with_cfg` to select their target platform and force
+`compilation_mode=opt`, including all compression libraries and smoke executables.
+Passing `-c opt` is optional for these targets. The public BCR library inherits
+the consumer's platform and compilation mode.
+
 The library targets produce `librocksdb.a` for
 `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, and `aarch64-apple-darwin`.
 Link consumers with the matching C++ runtime.
