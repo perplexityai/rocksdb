@@ -6,4 +6,4 @@ tasks:
     name: Build RocksDB
     platform: ${{ platform }}
     bazel: ${{ bazel }}
-    build_targets: ["@pplx_rocksdb//:pplx_rocksdb"]
+    build_targets: ["@rocksdb//:rocksdb"]

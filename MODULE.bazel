@@ -13,9 +13,9 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 
 http_archive(
     name = "rocksdb",
-    build_file = "//bcr/modules/pplx_rocksdb/11.8.1/overlay:BUILD.bazel",
+    build_file = "//bcr/modules/rocksdb/11.8.1/overlay:BUILD.bazel",
     patch_args = ["-p1"],
-    patches = ["//:bcr/modules/pplx_rocksdb/11.8.1/patches/snappy_includes.patch"],
+    patches = ["//:bcr/modules/rocksdb/11.8.1/patches/snappy_includes.patch"],
     sha256 = "618d9726a7cb1cf4ce034f4cdca49de98aa64867dda06b91371a791ae8921aff",
     strip_prefix = "rocksdb-11.8.1",
     urls = ["https://github.com/facebook/rocksdb/archive/refs/tags/v11.8.1.tar.gz"],
