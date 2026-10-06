@@ -1,0 +1,65 @@
+name: bazel-opt
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and update
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build optimized distributions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.sha }}
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # v0.19.0
+        with:
+          bazelisk-cache: true
+          cache-save: true
+          disk-cache: rocksdb-arm64-opt
+          repository-cache: true
+      - name: Build and package optimized distributions
+        run: |
+          bazel build -c opt //:dist \
+            //:rocksdb-smoke-aarch64-unknown-linux-gnu \
+            //:rocksdb-smoke-aarch64-apple-darwin
+          bash tools/package_dist.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: rocksdb-arm64-opt
+          path: artifacts/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    name: Publish release archives
+    needs: build
+    if: ${{ github.event_name == 'release' || inputs.tag != '' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: rocksdb-arm64-opt
+          path: artifacts
+      - name: Upload release archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release upload "$RELEASE_TAG" \
+            artifacts/rocksdb-aarch64-unknown-linux-gnu.tar.gz \
+            artifacts/rocksdb-aarch64-apple-darwin.tar.gz \
+            --clobber --repo "$GITHUB_REPOSITORY"

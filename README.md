@@ -79,8 +79,29 @@ consulting the host Git checkout or current time.
 
 The repository includes Watchman's Conventional Commit hooks. Install them with
 `npm ci` (Node.js 22 or newer). The release-please configuration tracks the
-harness version separately from the upstream RocksDB version; automated release
-publishing has not been configured.
+harness version separately from the upstream RocksDB version.
+
+## GitHub Actions
+
+The `bazel` workflow validates BCR consumption with Bazel 8 and 9 on Linux
+x86_64, Linux ARM64, and macOS ARM64. It also cross-compiles both ARM64
+distributions and runs their persistence smoke executables on native runners.
+The commit-hook workflow checks PR titles and commit messages.
+
+On published releases, `bazel-opt` uploads a tarball for each ARM64 target,
+containing `lib/librocksdb.a`, public headers, upstream licenses, and a smoke
+executable. A manual run can build artifacts or update an existing release tag.
+To package locally after building the library and smoke targets, run
+`bash tools/package_dist.sh` with Bazel on your `PATH`.
+
+Release-please requires a `GH_RELEASE_TOKEN` repository secret with permission
+to create release PRs and releases. A separate token allows published releases
+to trigger the artifact and BCR workflows.
+The BCR publishing workflow uses `BCR_PUBLISH_TOKEN` (a classic PAT with `repo`
+and `workflow` scopes and access to `perplexityai/bazel-central-registry`) to
+stage the checked-in module and open a public BCR PR. It supports manual module
+version selection; on releases it selects the latest checked-in module version,
+independently of the development harness version.
 
 ## License
 

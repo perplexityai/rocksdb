@@ -1,0 +1,101 @@
+name: bazel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bcr-overlay:
+    name: BCR consumption (${{ matrix.runner }}, Bazel ${{ matrix.bazel }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
+        bazel: [8.4.1, 9.2.0]
+    env:
+      USE_BAZEL_VERSION: ${{ matrix.bazel }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # v0.19.0
+        with:
+          bazelisk-cache: true
+          cache-save: ${{ github.event_name == 'push' }}
+          disk-cache: ${{ github.workflow }}-bcr-${{ matrix.runner }}-${{ matrix.bazel }}
+          repository-cache: true
+      - name: Validate registry metadata
+        run: python3 tests/validate_bcr.py
+      - name: Build and smoke test as a BCR dependency
+        working-directory: tests/bcr
+        shell: bash
+        run: |
+          set -euo pipefail
+          bazel run -c opt \
+            --registry="file://$GITHUB_WORKSPACE/bcr" \
+            --registry=https://bcr.bazel.build \
+            --incompatible_autoload_externally=+@rules_cc \
+            //:smoke_test -- "$RUNNER_TEMP/rocksdb-bcr-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+
+  build:
+    name: Cross-compile ARM64 distributions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # v0.19.0
+        with:
+          bazelisk-cache: true
+          cache-save: ${{ github.event_name == 'push' }}
+          disk-cache: rocksdb-arm64-opt
+          repository-cache: true
+      - name: Build and package optimized distributions
+        run: |
+          bazel build -c opt //:dist \
+            //:rocksdb-smoke-aarch64-unknown-linux-gnu \
+            //:rocksdb-smoke-aarch64-apple-darwin
+          bash tools/package_dist.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: rocksdb-arm64-opt
+          path: artifacts/*.tar.gz
+          if-no-files-found: error
+
+  smoke:
+    name: Native persistence test (${{ matrix.triple }})
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - triple: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+          - triple: aarch64-apple-darwin
+            runner: macos-15
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: rocksdb-arm64-opt
+          path: artifacts
+      - name: Run persistence smoke test
+        env:
+          TRIPLE: ${{ matrix.triple }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf "artifacts/rocksdb-$TRIPLE.tar.gz" -C artifacts
+          "artifacts/rocksdb-$TRIPLE/rocksdb_smoke_test" \
+            "$RUNNER_TEMP/rocksdb-smoke-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
