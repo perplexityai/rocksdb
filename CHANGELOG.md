@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 (2026-10-06)
+
+## What's Changed
+* fix: enforce optimized RocksDB distributions with with_cfg by @longlho in https://github.com/perplexityai/rocksdb/pull/8
+* refactor: rename overlay module to rocksdb by @longlho in https://github.com/perplexityai/rocksdb/pull/10
+
+
+**Full Changelog**: https://github.com/perplexityai/rocksdb/compare/v0.2.0...v0.2.1
+
 ## 0.2.0 (2026-10-06)
 
 ## What's Changed
