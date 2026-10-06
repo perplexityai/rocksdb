@@ -1,0 +1,39 @@
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//bazel:dist.bzl", "linux_aarch64_dist", "macos_aarch64_dist")
+
+package(default_visibility = ["//visibility:public"])
+
+linux_aarch64_dist(
+    name = "rocksdb-aarch64-unknown-linux-gnu",
+    srcs = ["@rocksdb"],
+)
+
+cc_binary(
+    name = "rocksdb_smoke_test",
+    srcs = ["tests/rocksdb_smoke_test.cc"],
+    copts = ["-std=c++20"],
+    deps = ["@rocksdb"],
+)
+
+linux_aarch64_dist(
+    name = "rocksdb-smoke-aarch64-unknown-linux-gnu",
+    srcs = [":rocksdb_smoke_test"],
+)
+
+macos_aarch64_dist(
+    name = "rocksdb-aarch64-apple-darwin",
+    srcs = ["@rocksdb"],
+)
+
+macos_aarch64_dist(
+    name = "rocksdb-smoke-aarch64-apple-darwin",
+    srcs = [":rocksdb_smoke_test"],
+)
+
+filegroup(
+    name = "dist",
+    srcs = [
+        ":rocksdb-aarch64-apple-darwin",
+        ":rocksdb-aarch64-unknown-linux-gnu",
+    ],
+)
