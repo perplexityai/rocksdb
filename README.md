@@ -27,11 +27,14 @@ Locate the archives and smoke executables with `bazel cquery -c opt <target>
 --output=files`; the platform transitions place them in configuration-specific
 output directories.
 
-No host-specific CPU instructions are enabled. Optional external compression
-libraries, io_uring, jemalloc, and plugins are currently disabled.
+No host-specific CPU instructions are enabled. Snappy, zlib, bzip2, LZ4/LZ4HC,
+and Zstd are compiled from pinned BCR sources through the consumer toolchain;
+no host compression libraries or configure probes are used. io_uring, jemalloc,
+and plugins are currently disabled.
 
 Run the smoke executable on a matching Linux or macOS host with a fresh database
-path. It verifies writing, SST flush, close/reopen, reading, deletion, and cleanup:
+path. It checks codec availability and verifies writing, SST flush, close/reopen,
+reading, deletion, and cleanup with each supported compression codec:
 
 ```sh
 /path/to/rocksdb_smoke_test /tmp/rocksdb-smoke-new
@@ -99,7 +102,7 @@ The ARM64 Linux and macOS smoke jobs do not compile sources.
 The commit-hook workflow checks PR titles and commit messages.
 
 On published releases, `bazel-opt` uploads a tarball for each target,
-containing `lib/librocksdb.a`, public headers, upstream licenses, and a smoke
+containing `lib/librocksdb.a` and codec archives, public headers, upstream licenses, and a smoke
 executable. A manual run can build artifacts or update an existing release tag.
 To package locally after building the library and smoke targets, run
 `bash tools/package_dist.sh` with Bazel on your `PATH`.
