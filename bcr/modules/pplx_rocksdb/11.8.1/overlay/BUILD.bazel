@@ -423,7 +423,14 @@ cc_library(
         ":macos": [],
     }),
     linkstatic = True,
-    local_defines = ["ROCKSDB_USE_RTTI"] + select({
+    local_defines = [
+        "ROCKSDB_USE_RTTI",
+        "BZIP2",
+        "LZ4",
+        "SNAPPY",
+        "ZLIB",
+        "ZSTD",
+    ] + select({
         ":linux": [
             "OS_LINUX",
             "ROCKSDB_FALLOCATE_PRESENT",
@@ -453,4 +460,11 @@ cc_library(
         allow_empty = True,
         exclude = ["include/**/*.h"],
     ),
+    deps = [
+        "@bzip2//:bz2",
+        "@lz4//:lz4_hc",
+        "@snappy",
+        "@zlib",
+        "@zstd",
+    ],
 )
