@@ -1,0 +1,49 @@
+module(
+    name = "rocksdb_development",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "llvm", version = "0.8.11")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.20")
+bazel_dep(name = "with_cfg.bzl", version = "0.12.0")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "rocksdb",
+    build_file = "//bcr/modules/rocksdb/11.8.1/overlay:BUILD.bazel",
+    sha256 = "618d9726a7cb1cf4ce034f4cdca49de98aa64867dda06b91371a791ae8921aff",
+    strip_prefix = "rocksdb-11.8.1",
+    urls = ["https://github.com/facebook/rocksdb/archive/refs/tags/v11.8.1.tar.gz"],
+)
+
+toolchain = use_extension("@llvm//extensions:toolchain.bzl", "toolchain")
+toolchain.exec(
+    arch = "aarch64",
+    os = "macos",
+)
+toolchain.exec(
+    arch = "x86_64",
+    os = "linux",
+)
+toolchain.exec(
+    arch = "aarch64",
+    os = "linux",
+)
+toolchain.target(
+    arch = "x86_64",
+    os = "linux",
+)
+toolchain.target(
+    arch = "aarch64",
+    os = "linux",
+)
+toolchain.target(
+    arch = "aarch64",
+    os = "macos",
+)
+use_repo(toolchain, "llvm_toolchains")
+
+register_toolchains("@llvm_toolchains//:all")
