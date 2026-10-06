@@ -3,7 +3,7 @@
     "integrity": "sha256-YY2XJqfLHPTOA09M3KSd6YqmSGfdoGuRNxp5GuiSGv8=",
     "strip_prefix": "rocksdb-11.8.1",
     "overlay": {
-        "BUILD.bazel": "sha256-vfCWaDYOhrHvgYJzGeGJFzBLbPeqz2/oLMZGQLN2o50=",
-        "MODULE.bazel": "sha256-6p+lf/MZIUc7XoV4qmRlp1VMokY3kPzyaCZA3wQrs8U="
+        "BUILD.bazel": "sha256-uj5aL5z5VCZ08Qf3KlFco3zqJUYtK9Hp+YZ2FLlxKGY=",
+        "MODULE.bazel": "sha256-uV/CBywc3xbUokrpJ3ZcNsBdP/6mleNA3VDAL+/t1Vg="
     }
 }
