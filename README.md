@@ -157,3 +157,6 @@ codecs are disabled.
 On Linux, four `PrefetchTest.Basic` cases are filtered from presubmit: v11.8.1
 expects 2 MiB compaction reads but observes adaptive 256 KiB reads. The target
 remains available, and its other 102 cases still run.
+Bazel can retry the compaction service target after an intermittent checksum
+failure during background compactions. The full-codec table target has a
+one-hour timeout for slower CI runners.
