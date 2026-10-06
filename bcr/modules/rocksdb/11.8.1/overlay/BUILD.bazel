@@ -2,6 +2,7 @@ load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//:gen_test_targets.bzl", "gen_test_targets")
+load(":jemalloc.bzl", "darwin_jemalloc")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -478,6 +479,7 @@ cc_library(
     linkstatic = True,
     local_defines = [
         "ROCKSDB_USE_RTTI",
+        "ROCKSDB_JEMALLOC",
     ] + select({
         ":with_bzip2_setting": ["BZIP2"],
         "//conditions:default": [],
@@ -526,7 +528,7 @@ cc_library(
         allow_empty = True,
         exclude = ["include/**/*.h"],
     ),
-    deps = select({
+    deps = [":jemalloc"] + select({
         ":with_bzip2_setting": ["@bzip2//:bz2"],
         "//conditions:default": [],
     }) + select({
@@ -606,4 +608,17 @@ gen_test_targets(
             "utilities/transactions/write_prepared_transaction_test.cc",
         ],
     ),
+)
+
+alias(
+    name = "jemalloc",
+    actual = select({
+        "@platforms//os:macos": ":darwin_jemalloc",
+        "//conditions:default": "@jemalloc",
+    }),
+)
+
+darwin_jemalloc(
+    name = "darwin_jemalloc",
+    actual = "@jemalloc",
 )

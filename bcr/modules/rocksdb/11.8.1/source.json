@@ -3,9 +3,10 @@
     "integrity": "sha256-YY2XJqfLHPTOA09M3KSd6YqmSGfdoGuRNxp5GuiSGv8=",
     "strip_prefix": "rocksdb-11.8.1",
     "overlay": {
-        "BUILD.bazel": "sha256-CBta3I7ZVp7reIVhPMu/2adgcvAaHnpXR9ic5b8tqqA=",
-        "MODULE.bazel": "sha256-Y3nBLM3CozTQ8ndKk2DGXmm03StlabGHrJMS2M2YOn0=",
-        "gen_test_targets.bzl": "sha256-hf1nB6V0qsakzT87w3V5lserZpVDCdfHBsusb/n4uQk="
+        "BUILD.bazel": "sha256-QkyZAtD3FCulNO8SCBweBRA7p8KaI81NF27lUMtYjzA=",
+        "MODULE.bazel": "sha256-TkhojUkwTdkZsDIv48n3mAHXHvEO8vKpbOz9c7Vs4QI=",
+        "gen_test_targets.bzl": "sha256-hf1nB6V0qsakzT87w3V5lserZpVDCdfHBsusb/n4uQk=",
+        "jemalloc.bzl": "sha256-pnbO1QYPiEDDx0W1DX5mZXhAPNxMnsJh6h3RIZYlTLg="
     },
     "patch_strip": 1,
     "patches": {
