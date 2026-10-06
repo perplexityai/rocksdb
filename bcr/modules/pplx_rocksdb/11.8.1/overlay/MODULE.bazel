@@ -1,5 +1,5 @@
 module(
-    name = "rocksdb",
+    name = "pplx_rocksdb",
     version = "11.8.1",
     bazel_compatibility = [
         ">=8.0.0",

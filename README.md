@@ -1,4 +1,4 @@
-# RocksDB Bazel overlay
+# RocksDB Bazel overlay (`pplx_rocksdb`)
 
 Bazel overlay for [facebook/rocksdb](https://github.com/facebook/rocksdb),
 following the [Watchman overlay](https://github.com/perplexityai/watchman)
@@ -49,13 +49,18 @@ bazel run -c opt --platforms=//bazel/platforms:linux_x64 \
 The consumer API is:
 
 ```starlark
-bazel_dep(name = "rocksdb", version = "11.8.1")
+bazel_dep(name = "pplx_rocksdb", version = "11.8.1", repo_name = "rocksdb")
 ```
 
 Depend on `@rocksdb//:rocksdb` from a `cc_library` or `cc_binary`.
 
+The published module is `pplx_rocksdb`, separate from the existing BCR
+`rocksdb` module. `repo_name = "rocksdb"` preserves existing labels in the
+consuming module. Without that mapping, use `@pplx_rocksdb//:rocksdb` or
+the `@pplx_rocksdb` shorthand alias. This does not replace transitive
+dependencies on the existing `rocksdb` module.
 
-`bcr/modules/rocksdb/11.8.1` contains the registry module, upstream archive
+`bcr/modules/pplx_rocksdb/11.8.1` contains the registry module, upstream archive
 checksum, overlay file checksums, and Linux x86_64/ARM64 and macOS ARM64 presubmit matrix.
 The published module uses the consumer's C++ toolchain; LLVM toolchains are
 registered only in the development harness. The overlay supports Linux and macOS.

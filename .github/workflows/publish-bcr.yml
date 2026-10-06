@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Checked-in RocksDB module version"
+        description: "Checked-in pplx_rocksdb module version"
         required: true
         type: string
 
@@ -41,7 +41,7 @@ jobs:
         run: |
           version="${REQUESTED_VERSION}"
           if [[ -z "${version}" ]]; then
-            version="$(python3 -c 'import json; print(json.load(open("bcr/modules/rocksdb/metadata.json"))["versions"][-1])')"
+            version="$(python3 -c 'import json; print(json.load(open("bcr/modules/pplx_rocksdb/metadata.json"))["versions"][-1])')"
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
@@ -58,7 +58,7 @@ jobs:
           python3 tools/stage_bcr_entry.py \
             --source-registry bcr \
             --target-registry bazel-central-registry \
-            --module rocksdb \
+            --module pplx_rocksdb \
             --version "${VERSION}"
 
       - name: Publish registry branch
@@ -69,14 +69,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          branch="rocksdb-${VERSION}"
+          branch="pplx_rocksdb-${VERSION}"
           registry="bazel-central-registry"
           git -C "${registry}" checkout -b "${branch}"
-          git -C "${registry}" add modules/rocksdb
+          git -C "${registry}" add modules/pplx_rocksdb
           git -C "${registry}" \
             -c user.name='pplx-oss' \
             -c user.email='ossmaintainers@perplexity.ai' \
-            commit -m "rocksdb@${VERSION}"
+            commit -m "pplx_rocksdb@${VERSION}"
           git -C "${registry}" remote add publish \
             "https://x-access-token:${BCR_PUBLISH_TOKEN}@github.com/perplexityai/bazel-central-registry.git"
           git -C "${registry}" push --force publish "${branch}"
@@ -100,10 +100,10 @@ jobs:
             pr_url="$(gh api \
               --method POST \
               repos/bazelbuild/bazel-central-registry/pulls \
-              -f "title=rocksdb@${VERSION}" \
+              -f "title=pplx_rocksdb@${VERSION}" \
               -f "head=perplexityai:${BRANCH}" \
               -f base=main \
-              -f body='Publish the Perplexity-maintained RocksDB overlay.' \
+              -f body='Publish the Perplexity-maintained RocksDB overlay as pplx_rocksdb.' \
               --jq .html_url)"
             pr_number="${pr_url##*/}"
             gh api \
