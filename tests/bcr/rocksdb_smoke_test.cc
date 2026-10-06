@@ -7,13 +7,22 @@
 
 #include "rocksdb/convenience.h"
 #include "rocksdb/db.h"
+#include "rocksdb/memory_allocator.h"
 #include "rocksdb/version.h"
+
+#define JEMALLOC_MANGLE
+#include "jemalloc/jemalloc.h"
 
 int main(int argc, char **argv) {
   if (argc != 2 || std::filesystem::exists(argv[1])) {
     std::cerr << "Usage: rocksdb_smoke_test <new-database-path>\n";
     return 1;
   }
+  const char *allocator_version = nullptr;
+  size_t version_size = sizeof(allocator_version);
+  if (mallctl("version", &allocator_version, &version_size, nullptr, 0) != 0)
+    return 1;
+  std::cout << "jemalloc " << allocator_version << '\n';
   const std::string path = argv[1];
   auto check = [](const rocksdb::Status &status) {
     if (!status.ok()) {
@@ -21,6 +30,14 @@ int main(int argc, char **argv) {
       std::exit(1);
     }
   };
+#ifdef __linux__
+  std::shared_ptr<rocksdb::MemoryAllocator> allocator;
+  check(rocksdb::NewJemallocNodumpAllocator({}, &allocator));
+  void *allocation = allocator->Allocate(4096);
+  if (allocation == nullptr || allocator->UsableSize(allocation, 4096) < 4096)
+    return 1;
+  allocator->Deallocate(allocation);
+#endif
   rocksdb::Options options;
   options.create_if_missing = true;
   const auto supported = rocksdb::GetSupportedCompressions();

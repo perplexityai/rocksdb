@@ -1,0 +1,57 @@
+diff --git a/include/jemalloc/jemalloc_rename.sh b/include/jemalloc/jemalloc_rename.sh
+--- a/include/jemalloc/jemalloc_rename.sh
++++ b/include/jemalloc/jemalloc_rename.sh
+@@ -11,8 +11,8 @@
+ EOF
+
+ for nm in `cat ${public_symbols_txt}` ; do
+-  n=`echo ${nm} |tr ':' ' ' |awk '{print $1}'`
+-  m=`echo ${nm} |tr ':' ' ' |awk '{print $2}'`
++  n="${nm%%:*}"
++  m="${nm#*:}"
+   echo "#  define je_${n} ${m}"
+ done
+
+diff --git a/include/jemalloc/jemalloc_mangle.sh b/include/jemalloc/jemalloc_mangle.sh
+--- a/include/jemalloc/jemalloc_mangle.sh
++++ b/include/jemalloc/jemalloc_mangle.sh
+@@ -15,7 +15,7 @@
+ EOF
+
+ for nm in `cat ${public_symbols_txt}` ; do
+-  n=`echo ${nm} |tr ':' ' ' |awk '{print $1}'`
++  n="${nm%%:*}"
+   echo "#  define ${n} ${symbol_prefix}${n}"
+ done
+
+@@ -33,7 +33,7 @@
+ EOF
+
+ for nm in `cat ${public_symbols_txt}` ; do
+-  n=`echo ${nm} |tr ':' ' ' |awk '{print $1}'`
++  n="${nm%%:*}"
+   echo "#  undef ${symbol_prefix}${n}"
+ done
+
+diff --git a/include/jemalloc/internal/public_namespace.sh b/include/jemalloc/internal/public_namespace.sh
+--- a/include/jemalloc/internal/public_namespace.sh
++++ b/include/jemalloc/internal/public_namespace.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+
+ for nm in `cat $1` ; do
+-  n=`echo ${nm} |tr ':' ' ' |awk '{print $1}'`
++  n="${nm%%:*}"
+   echo "#define je_${n} JEMALLOC_N(${n})"
+ done
+diff --git a/include/jemalloc/internal/public_unnamespace.sh b/include/jemalloc/internal/public_unnamespace.sh
+--- a/include/jemalloc/internal/public_unnamespace.sh
++++ b/include/jemalloc/internal/public_unnamespace.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+
+ for nm in `cat $1` ; do
+-  n=`echo ${nm} |tr ':' ' ' |awk '{print $1}'`
++  n="${nm%%:*}"
+   echo "#undef je_${n}"
+ done

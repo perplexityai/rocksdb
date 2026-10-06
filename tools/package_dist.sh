@@ -34,6 +34,7 @@ for triple in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu aarch64-apple-d
       --starlark:expr=target.label.workspace_root | sort -u)
     install -m644 "$execroot/$source_root/$license" "$stage/licenses/$dependency.txt"
   done <<'LICENSES'
+jemalloc|@jemalloc//:jemalloc|COPYING
 bzip2|@bzip2//:bz2|LICENSE
 lz4|@lz4//:lz4|lib/LICENSE
 snappy|@snappy//:snappy|COPYING
