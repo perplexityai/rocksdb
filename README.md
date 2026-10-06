@@ -6,20 +6,22 @@ layout. Upstream sources are pinned to **v11.8.1**.
 
 ## Development build
 
-The development harness registers hermetic LLVM toolchains and a Linux ARM64
-platform using glibc 2.28 and libc++. It can cross-compile from Linux x86_64
+The development harness registers hermetic LLVM toolchains and Linux x86_64/ARM64
+platforms using glibc 2.28 and libc++. It can cross-compile from Linux x86_64
 or build on a Linux ARM64 or macOS ARM64 host. Darwin ARM64 uses the hermetic macOS SDK
 and libc++. Bazel 9.2.0 is pinned in `.bazelversion`.
 
 ```sh
+bazel build -c opt //:rocksdb-x86_64-unknown-linux-gnu
 bazel build -c opt //:rocksdb-aarch64-unknown-linux-gnu
 bazel build -c opt //:rocksdb-aarch64-apple-darwin
 bazel build -c opt //:rocksdb-smoke-aarch64-unknown-linux-gnu
 bazel build -c opt //:rocksdb-smoke-aarch64-apple-darwin
+bazel build -c opt //:rocksdb-smoke-x86_64-unknown-linux-gnu
 ```
 
 The library targets produce `librocksdb.a` for
-`aarch64-unknown-linux-gnu` and `aarch64-apple-darwin`.
+`x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, and `aarch64-apple-darwin`.
 Link consumers with the matching C++ runtime.
 Locate the archives and smoke executables with `bazel cquery -c opt <target>
 --output=files`; the platform transitions place them in configuration-specific
@@ -28,7 +30,7 @@ output directories.
 No host-specific CPU instructions are enabled. Optional external compression
 libraries, io_uring, jemalloc, and plugins are currently disabled.
 
-Run the smoke executable on a matching ARM64 Linux or macOS host with a fresh database
+Run the smoke executable on a matching Linux or macOS host with a fresh database
 path. It verifies writing, SST flush, close/reopen, reading, deletion, and cleanup:
 
 ```sh
@@ -38,7 +40,8 @@ path. It verifies writing, SST flush, close/reopen, reading, deletion, and clean
 For local x86_64 validation:
 
 ```sh
-bazel run -c opt //:rocksdb_smoke_test -- /tmp/rocksdb-smoke-new
+bazel run -c opt --platforms=//bazel/platforms:linux_x64 \
+  //:rocksdb_smoke_test -- /tmp/rocksdb-smoke-new
 ```
 
 ## BCR overlay
@@ -84,11 +87,13 @@ harness version separately from the upstream RocksDB version.
 ## GitHub Actions
 
 The `bazel` workflow validates BCR consumption with Bazel 8 and 9 on Linux
-x86_64, Linux ARM64, and macOS ARM64. It also cross-compiles both ARM64
-distributions and runs their persistence smoke executables on native runners.
+amd64. A single Linux amd64 build job compiles all three distributions.
+Separate jobs download those artifacts and run persistence smoke tests on
+runners matching each target triple: Linux amd64, Linux ARM64, and macOS ARM64.
+The ARM64 Linux and macOS smoke jobs do not compile sources.
 The commit-hook workflow checks PR titles and commit messages.
 
-On published releases, `bazel-opt` uploads a tarball for each ARM64 target,
+On published releases, `bazel-opt` uploads a tarball for each target,
 containing `lib/librocksdb.a`, public headers, upstream licenses, and a smoke
 executable. A manual run can build artifacts or update an existing release tag.
 To package locally after building the library and smoke targets, run

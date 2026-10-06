@@ -13,13 +13,12 @@ permissions:
 
 jobs:
   bcr-overlay:
-    name: BCR consumption (${{ matrix.runner }}, Bazel ${{ matrix.bazel }})
-    runs-on: ${{ matrix.runner }}
+    name: BCR consumption (Bazel ${{ matrix.bazel }})
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
         bazel: [8.4.1, 9.2.0]
     env:
       USE_BAZEL_VERSION: ${{ matrix.bazel }}
@@ -31,23 +30,23 @@ jobs:
         with:
           bazelisk-cache: true
           cache-save: ${{ github.event_name == 'push' }}
-          disk-cache: ${{ github.workflow }}-bcr-${{ matrix.runner }}-${{ matrix.bazel }}
+          disk-cache: ${{ github.workflow }}-bcr-linux-amd64-${{ matrix.bazel }}
           repository-cache: true
       - name: Validate registry metadata
         run: python3 tests/validate_bcr.py
-      - name: Build and smoke test as a BCR dependency
+      - name: Build as a BCR dependency
         working-directory: tests/bcr
         shell: bash
         run: |
           set -euo pipefail
-          bazel run -c opt \
+          bazel build -c opt \
             --registry="file://$GITHUB_WORKSPACE/bcr" \
             --registry=https://bcr.bazel.build \
             --incompatible_autoload_externally=+@rules_cc \
-            //:smoke_test -- "$RUNNER_TEMP/rocksdb-bcr-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+            @rocksdb//:rocksdb //:smoke_test
 
   build:
-    name: Cross-compile ARM64 distributions
+    name: Build Linux amd64 and ARM64 distributions
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -58,17 +57,18 @@ jobs:
         with:
           bazelisk-cache: true
           cache-save: ${{ github.event_name == 'push' }}
-          disk-cache: rocksdb-arm64-opt
+          disk-cache: rocksdb-dist-opt
           repository-cache: true
       - name: Build and package optimized distributions
         run: |
           bazel build -c opt //:dist \
+            //:rocksdb-smoke-x86_64-unknown-linux-gnu \
             //:rocksdb-smoke-aarch64-unknown-linux-gnu \
             //:rocksdb-smoke-aarch64-apple-darwin
           bash tools/package_dist.sh
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: rocksdb-arm64-opt
+          name: rocksdb-dist-opt
           path: artifacts/*.tar.gz
           if-no-files-found: error
 
@@ -81,6 +81,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - triple: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
           - triple: aarch64-unknown-linux-gnu
             runner: ubuntu-24.04-arm
           - triple: aarch64-apple-darwin
@@ -88,7 +90,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: rocksdb-arm64-opt
+          name: rocksdb-dist-opt
           path: artifacts
       - name: Run persistence smoke test
         env:

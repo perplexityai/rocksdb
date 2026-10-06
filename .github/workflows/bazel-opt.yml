@@ -27,17 +27,18 @@ jobs:
         with:
           bazelisk-cache: true
           cache-save: true
-          disk-cache: rocksdb-arm64-opt
+          disk-cache: rocksdb-dist-opt
           repository-cache: true
       - name: Build and package optimized distributions
         run: |
           bazel build -c opt //:dist \
+            //:rocksdb-smoke-x86_64-unknown-linux-gnu \
             //:rocksdb-smoke-aarch64-unknown-linux-gnu \
             //:rocksdb-smoke-aarch64-apple-darwin
           bash tools/package_dist.sh
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: rocksdb-arm64-opt
+          name: rocksdb-dist-opt
           path: artifacts/*.tar.gz
           if-no-files-found: error
 
@@ -51,7 +52,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: rocksdb-arm64-opt
+          name: rocksdb-dist-opt
           path: artifacts
       - name: Upload release archives
         env:
@@ -60,6 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           gh release upload "$RELEASE_TAG" \
+            artifacts/rocksdb-x86_64-unknown-linux-gnu.tar.gz \
             artifacts/rocksdb-aarch64-unknown-linux-gnu.tar.gz \
             artifacts/rocksdb-aarch64-apple-darwin.tar.gz \
             --clobber --repo "$GITHUB_REPOSITORY"

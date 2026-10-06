@@ -9,7 +9,7 @@ mapfile -t source_roots < <(
 )
 [[ "${#source_roots[@]}" -eq 1 ]]
 
-for triple in aarch64-unknown-linux-gnu aarch64-apple-darwin; do
+for triple in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu aarch64-apple-darwin; do
   mapfile -t archives < <(
     bazel cquery -c opt "//:rocksdb-$triple" --output=files
   )
