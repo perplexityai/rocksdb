@@ -191,9 +191,10 @@ compaction-service cases whose custom objects fail remote compaction on macOS.
 The overlay CI also runs the complete table and WAL suites natively on macOS
 ARM64 with Bazel 8 and 9. These jobs use `-O1` with assertions enabled, bypass
 cached test results, and run each suite once so timeouts remain visible. Test
-logs and XML results are uploaded even when a suite fails. The test targets and
-one-hour timeouts match the checked-in BCR entry; a faster CI runner may finish
-without reproducing BCR's timeout.
+logs and XML results are uploaded even when a suite fails. On macOS, table tests
+run in 16 shards and WAL tests in four shards, retaining every GoogleTest case
+while keeping each shard within the existing one-hour timeout. Other platforms
+and test targets retain their existing configuration.
 
 GoogleTest `1.17.0.bcr.2` loads the C++ rules explicitly for Bazel 9. The overlay
 also patches v11.8.1 to keep trie bitvector storage aligned under libc++, use
