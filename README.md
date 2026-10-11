@@ -158,5 +158,13 @@ On Linux, four `PrefetchTest.Basic` cases are filtered from presubmit: v11.8.1
 expects 2 MiB compaction reads but observes adaptive 256 KiB reads. The target
 remains available, and its other 102 cases still run.
 Bazel can retry the compaction service target after an intermittent checksum
-failure during background compactions. The full-codec table target has a
-one-hour timeout for slower CI runners.
+failure during background compactions. The large table, WAL, iterator, and
+transaction suites have one-hour timeouts for slower CI runners. macOS presubmit
+uses `-O1` without `NDEBUG` to retain test hooks, and filters only the two
+compaction-service cases whose custom objects fail remote compaction on macOS.
+
+GoogleTest `1.17.0.bcr.2` loads the C++ rules explicitly for Bazel 9. The overlay
+also patches v11.8.1 to keep trie bitvector storage aligned under libc++, use
+the correct buffer type in the Zstd checksum test callback, check the documented
+status for unavailable allocator factories, and test compression ratios without
+depending on platform-specific SST metadata size.
