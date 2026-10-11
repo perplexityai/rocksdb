@@ -100,8 +100,22 @@ consulting the host Git checkout or current time.
 ## Development hooks
 
 The repository includes Watchman's Conventional Commit hooks. Install them with
-`npm ci` (Node.js 22 or newer). The release-please configuration tracks the
-harness version separately from the upstream RocksDB version.
+`npm ci` (Node.js 22 or newer).
+
+Release versions match the checked-in BCR module version. The first overlay for
+an upstream release uses its version, such as `11.8.1`; subsequent overlay-only
+revisions use `11.8.1.bcr.1`, `11.8.1.bcr.2`, and so on. An upstream upgrade
+starts again at the new upstream version. Published registry entries are
+immutable: add a new version directory and append it to `metadata.json` for
+each revision, updating both registry and overlay `MODULE.bazel` files and
+their checksums. Update the development module, overlay paths, and consumer
+example to the new version as well; the upstream archive URL and strip prefix
+continue to use the upstream version without the `.bcr.N` suffix.
+
+Run the `Release overlay` workflow with the checked-in module version to create
+the corresponding `v<version>` GitHub release and generate release notes.
+This replaces the former `0.x` harness releases; historical tags and changelog
+entries retain their original versions.
 
 ## GitHub Actions
 
@@ -118,14 +132,14 @@ executable. A manual run can build artifacts or update an existing release tag.
 To package locally after building the library and smoke targets, run
 `bash tools/package_dist.sh` with Bazel on your `PATH`.
 
-Release-please requires a `GH_RELEASE_TOKEN` repository secret with permission
-to create release PRs and releases. A separate token allows published releases
+The release workflow requires a `GH_RELEASE_TOKEN` repository secret with
+permission to create releases. A separate token allows published releases
 to trigger the artifact and BCR workflows.
 The BCR publishing workflow uses `BCR_PUBLISH_TOKEN` (a classic PAT with `repo`
 and `workflow` scopes and access to `perplexityai/bazel-central-registry`) to
 stage the checked-in module and open a public BCR PR. It supports manual module
-version selection; on releases it selects the latest checked-in module version,
-independently of the development harness version.
+version selection; on releases it checks out the release tag and publishes
+that tag's module version.
 
 ## License
 
