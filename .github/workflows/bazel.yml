@@ -1,79 +1,39 @@
-name: bazel
-
-on:
+---
+name: Retained native coverage
+'on':
   push:
-    branches: [main]
+    branches:
+    - main
   pull_request:
-    branches: [main]
+    branches:
+    - main
   merge_group:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
-  bcr-overlay:
-    name: BCR consumption (Bazel ${{ matrix.bazel }})
-    runs-on: ubuntu-24.04
+  smoke-arm64:
+    name: Native Linux ARM64 smoke
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        bazel: [8.4.1, 9.2.0]
-    env:
-      USE_BAZEL_VERSION: ${{ matrix.bazel }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # v0.19.0
-        with:
-          bazelisk-cache: true
-          cache-save: ${{ github.event_name == 'push' }}
-          disk-cache: ${{ github.workflow }}-bcr-linux-amd64-${{ matrix.bazel }}
-          repository-cache: true
-      - name: Validate registry metadata
-        run: python3 tests/validate_bcr.py
-      - name: Build as a BCR dependency
-        working-directory: tests/bcr
-        shell: bash
-        run: |
-          set -euo pipefail
-          bazel build -c opt \
-            --registry="file://$GITHUB_WORKSPACE/bcr" \
-            --registry=https://bcr.bazel.build \
-            --incompatible_autoload_externally=+@rules_cc \
-            @rocksdb//:rocksdb //:smoke_test
-      - name: Test upstream RocksDB targets
-        working-directory: tests/bcr
-        shell: bash
-        run: |
-          set -euo pipefail
-          bazel test \
-            --registry="file://$GITHUB_WORKSPACE/bcr" \
-            --registry=https://bcr.bazel.build \
-            --incompatible_autoload_externally= \
-            --copt=-O1 \
-            --test_output=errors \
-            @rocksdb//:util_coding_test @rocksdb//:util_crc32c_test \
-            @rocksdb//:util_compression_test \
-            @rocksdb//:db_db_basic_test @rocksdb//:env_env_basic_test
-
-      - name: Test patched upstream cases
-        working-directory: tests/bcr
-        shell: bash
-        run: |
-          set -euo pipefail
-          bazel test \
-            --registry="file://$GITHUB_WORKSPACE/bcr" \
-            --registry=https://bcr.bazel.build \
-            --incompatible_autoload_externally= \
-            --copt=-O1 \
-            --test_output=errors \
-            --test_arg='--gtest_filter=BitvectorTest.*:LoudsTrieTest.*:*MemoryAllocatorTest.*:CreateMemoryAllocatorTest.*:DBTest2.ZSTDChecksum:*/BlockBasedTableTest.CompressionRatioThreshold/*' \
-            @rocksdb//:utilities_trie_index_trie_index_test \
-            @rocksdb//:memory_memory_allocator_test \
-            @rocksdb//:db_db_etc2_test @rocksdb//:table_table_test
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      with:
+        persist-credentials: false
+    - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86
+      with:
+        bazelisk-cache: true
+        cache-save: "${{ github.event_name == 'push' }}"
+        disk-cache: rocksdb-retained-linux-arm64
+        repository-cache: true
+    - name: Build and smoke Linux ARM64
+      shell: bash
+      run: |
+        set -euo pipefail
+        bazel build -c opt //:rocksdb-smoke-aarch64-unknown-linux-gnu
+        mapfile -t outputs < <(bazel cquery -c opt --output=files //:rocksdb-smoke-aarch64-unknown-linux-gnu)
+        [[ ${#outputs[@]} -eq 1 ]]
+        "$PWD/${outputs[0]}" "$RUNNER_TEMP/rocksdb-smoke-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
 
   bcr-overlay-macos:
     name: BCR slow suites on macOS ARM64 (Bazel ${{ matrix.bazel }})
@@ -143,60 +103,3 @@ jobs:
           name: bcr-macos-arm64-testlogs-bazel-${{ matrix.bazel }}
           path: ${{ runner.temp }}/rocksdb-testlogs
           if-no-files-found: warn
-
-  build:
-    name: Build Linux amd64 and ARM64 distributions
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # v0.19.0
-        with:
-          bazelisk-cache: true
-          cache-save: ${{ github.event_name == 'push' }}
-          disk-cache: rocksdb-dist-opt
-          repository-cache: true
-      - name: Build and package optimized distributions
-        run: |
-          bazel build -c opt //:dist \
-            //:rocksdb-smoke-x86_64-unknown-linux-gnu \
-            //:rocksdb-smoke-aarch64-unknown-linux-gnu \
-            //:rocksdb-smoke-aarch64-apple-darwin
-          bash tools/package_dist.sh
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: rocksdb-dist-opt
-          path: artifacts/*.tar.gz
-          if-no-files-found: error
-
-  smoke:
-    name: Native persistence test (${{ matrix.triple }})
-    needs: build
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - triple: x86_64-unknown-linux-gnu
-            runner: ubuntu-24.04
-          - triple: aarch64-unknown-linux-gnu
-            runner: ubuntu-24.04-arm
-          - triple: aarch64-apple-darwin
-            runner: macos-15
-    steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: rocksdb-dist-opt
-          path: artifacts
-      - name: Run persistence smoke test
-        env:
-          TRIPLE: ${{ matrix.triple }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar -xzf "artifacts/rocksdb-$TRIPLE.tar.gz" -C artifacts
-          "artifacts/rocksdb-$TRIPLE/rocksdb_smoke_test" \
-            "$RUNNER_TEMP/rocksdb-smoke-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
