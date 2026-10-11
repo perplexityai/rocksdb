@@ -128,29 +128,19 @@ republish the same version for later edits. Keep the adapter tests passing when
 upgrading release-please, because the adapter uses the library's internal
 `Version` and Bazel strategy modules. Run `npm test` to check this integration.
 
-## GitHub Actions
+## CI and releases
 
-The `bazel` workflow validates BCR consumption with Bazel 8 and 9 on Linux
-amd64. A single Linux amd64 build job compiles all three distributions.
-Separate jobs download those artifacts and run persistence smoke tests on
-runners matching each target triple: Linux amd64, Linux ARM64, and macOS ARM64.
-The ARM64 Linux and macOS smoke jobs do not compile sources.
-The commit-hook workflow checks PR titles and commit messages.
+[Buildkite pipeline](https://buildkite.com/perplexity/rocksdb) runs BCR consumption
+with Bazel 8.4.1 and 9.2.0, commit hooks, one distribution cross-build and native
+artifact smoke tests. GHA retains Linux ARM64 native coverage.
+See [.buildkite/README.md](.buildkite/README.md) for queues, fork approval and cache policy.
 
-On published releases, `bazel-opt` uploads a tarball for each target,
-containing `lib/librocksdb.a` and codec archives, public headers, upstream licenses, and a smoke
-executable. A manual run can build artifacts or update an existing release tag.
-To package locally after building the library and smoke targets, run
-`bash tools/package_dist.sh` with Bazel on your `PATH`.
-
-The release workflow requires a `GH_RELEASE_TOKEN` repository secret with
-permission to create releases. A separate token allows published releases
-to trigger the artifact and BCR workflows.
-The BCR publishing workflow uses `BCR_PUBLISH_TOKEN` (a classic PAT with `repo`
-and `workflow` scopes and access to `perplexityai/bazel-central-registry`) to
-stage the checked-in module and open a public BCR PR. It supports manual module
-version selection; on releases it checks out the release tag and publishes
-that tag's module version.
+Release Please and BCR publishing stay on GHA, gated by the exact main Buildkite
+commit. Trusted tag builds stage optimized assets on GitHub using short-lived
+workflow-authorized tokens. The GHA `bazel-opt` workflow verifies those artifacts,
+runs their Linux ARM64 smoke test and publishes final assets without rebuilding.
+Manual publishing requires an existing release tag. Existing `GH_RELEASE_TOKEN`
+and `BCR_PUBLISH_TOKEN` secrets stay on GHA.
 
 ## License
 
