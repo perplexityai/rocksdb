@@ -1,0 +1,5 @@
+[
+  "rocksdb-x86_64-unknown-linux-gnu.tar.gz",
+  "rocksdb-aarch64-unknown-linux-gnu.tar.gz",
+  "rocksdb-aarch64-apple-darwin.tar.gz"
+]
