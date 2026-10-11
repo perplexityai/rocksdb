@@ -1,5 +1,19 @@
 # Changelog
 
+## 11.8.1 (2026-10-11)
+
+## What's Changed
+* feat: enable shared jemalloc in RocksDB overlay by @longlho in https://github.com/perplexityai/rocksdb/pull/11
+* fix: address RocksDB BCR review by @longlho in https://github.com/perplexityai/rocksdb/pull/12
+* fix: repair Bazel 9 and macOS BCR presubmit by @longlho in https://github.com/perplexityai/rocksdb/pull/14
+* fix: align overlay releases with BCR versions by @longlho in https://github.com/perplexityai/rocksdb/pull/15
+* fix: restore release-please with BCR versioning by @longlho in https://github.com/perplexityai/rocksdb/pull/16
+* ci: migrate overlay builds and artifact smoke to Buildkite by @longlho in https://github.com/perplexityai/rocksdb/pull/19
+* fix: shard slow macOS suites and add native overlay CI by @longlho in https://github.com/perplexityai/rocksdb/pull/18
+
+
+**Full Changelog**: https://github.com/perplexityai/rocksdb/compare/v0.2.1...v11.8.1
+
 ## 0.2.1 (2026-10-06)
 
 ## What's Changed
