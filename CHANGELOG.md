@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 (2026-10-11)
+
+## What's Changed
+* feat: enable shared jemalloc in RocksDB overlay by @longlho in https://github.com/perplexityai/rocksdb/pull/11
+* fix: address RocksDB BCR review by @longlho in https://github.com/perplexityai/rocksdb/pull/12
+* fix: repair Bazel 9 and macOS BCR presubmit by @longlho in https://github.com/perplexityai/rocksdb/pull/14
+
+
+**Full Changelog**: https://github.com/perplexityai/rocksdb/compare/v0.2.1...v0.3.0
+
 ## 0.2.1 (2026-10-06)
 
 ## What's Changed
