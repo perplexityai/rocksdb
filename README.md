@@ -78,7 +78,7 @@ registered only in the development harness. The overlay supports Linux and macOS
 The development harness patches jemalloc's build-time `nm` and `awk` actions
 for hermetic LLVM; consumers using that toolchain need the same fixes until
 they reach the jemalloc BCR module.
-It is checked in locally and has not been published to the public BCR.
+Version `11.8.1` is published in the public BCR.
 
 To validate it through the local registry:
 
@@ -116,7 +116,10 @@ The `Release Please` workflow opens or updates a release PR when the newest
 checked-in BCR version is newer than `.release-please-manifest.json`. Merging
 that PR publishes the corresponding `v<version>` GitHub release. Dispatch the
 workflow manually to refresh the PR; it also runs on pushes to `main`.
-Historical `0.x` tags and changelog entries retain their original versions.
+The release manifest starts at `11.8.1`, which was published directly to BCR;
+that version does not require a GitHub release PR. A newer checked-in BCR entry
+will start the next release. Historical `0.x` tags and changelog entries retain
+their original versions.
 
 `tools/bcr_release.cjs` wraps the pinned release-please library. Its BCR version
 adapter preserves `.bcr.N` throughout tag, PR, changelog, and manifest parsing,
