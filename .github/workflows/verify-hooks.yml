@@ -34,6 +34,9 @@ jobs:
       - name: Install Hook Dependencies
         run: npm ci
 
+      - name: Test BCR release versioning
+        run: npm test
+
       - name: Validate Pull Request Title
         if: github.event_name == 'pull_request'
         env:

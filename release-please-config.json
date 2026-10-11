@@ -1,0 +1,11 @@
+{
+  "release-type": "bcr-bazel",
+  "versioning": "bcr",
+  "include-component-in-tag": false,
+  "changelog-type": "github",
+  "packages": {
+    ".": {
+      "package-name": "rocksdb"
+    }
+  }
+}

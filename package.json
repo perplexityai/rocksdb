@@ -3,13 +3,18 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "test": "node --test tests/bcr_release.test.cjs"
   },
   "devDependencies": {
     "@commitlint/cli": "21.0.2",
-    "lefthook": "2.1.9"
+    "lefthook": "2.1.9",
+    "release-please": "17.11.2"
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "handlebars": "4.7.10"
   }
 }
