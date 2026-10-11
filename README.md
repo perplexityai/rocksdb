@@ -188,6 +188,13 @@ transaction suites have one-hour timeouts for slower CI runners. macOS presubmit
 uses `-O1` without `NDEBUG` to retain test hooks, and filters only the two
 compaction-service cases whose custom objects fail remote compaction on macOS.
 
+The overlay CI also runs the complete table and WAL suites natively on macOS
+ARM64 with Bazel 8 and 9. These jobs use `-O1` with assertions enabled, bypass
+cached test results, and run each suite once so timeouts remain visible. Test
+logs and XML results are uploaded even when a suite fails. The test targets and
+one-hour timeouts match the checked-in BCR entry; a faster CI runner may finish
+without reproducing BCR's timeout.
+
 GoogleTest `1.17.0.bcr.2` loads the C++ rules explicitly for Bazel 9. The overlay
 also patches v11.8.1 to keep trie bitvector storage aligned under libc++, use
 the correct buffer type in the Zstd checksum test callback, check the documented
