@@ -52,11 +52,28 @@ jobs:
           bazel test \
             --registry="file://$GITHUB_WORKSPACE/bcr" \
             --registry=https://bcr.bazel.build \
-            --incompatible_autoload_externally=+@rules_cc \
+            --incompatible_autoload_externally= \
+            --copt=-O1 \
             --test_output=errors \
             @rocksdb//:util_coding_test @rocksdb//:util_crc32c_test \
             @rocksdb//:util_compression_test \
             @rocksdb//:db_db_basic_test @rocksdb//:env_env_basic_test
+
+      - name: Test patched upstream cases
+        working-directory: tests/bcr
+        shell: bash
+        run: |
+          set -euo pipefail
+          bazel test \
+            --registry="file://$GITHUB_WORKSPACE/bcr" \
+            --registry=https://bcr.bazel.build \
+            --incompatible_autoload_externally= \
+            --copt=-O1 \
+            --test_output=errors \
+            --test_arg='--gtest_filter=BitvectorTest.*:LoudsTrieTest.*:*MemoryAllocatorTest.*:CreateMemoryAllocatorTest.*:DBTest2.ZSTDChecksum:*/BlockBasedTableTest.CompressionRatioThreshold/*' \
+            @rocksdb//:utilities_trie_index_trie_index_test \
+            @rocksdb//:memory_memory_allocator_test \
+            @rocksdb//:db_db_etc2_test @rocksdb//:table_table_test
 
   build:
     name: Build Linux amd64 and ARM64 distributions
