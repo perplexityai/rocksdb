@@ -112,10 +112,21 @@ their checksums. Update the development module, overlay paths, and consumer
 example to the new version as well; the upstream archive URL and strip prefix
 continue to use the upstream version without the `.bcr.N` suffix.
 
-Run the `Release overlay` workflow with the checked-in module version to create
-the corresponding `v<version>` GitHub release and generate release notes.
-This replaces the former `0.x` harness releases; historical tags and changelog
-entries retain their original versions.
+The `Release Please` workflow opens or updates a release PR when the newest
+checked-in BCR version is newer than `.release-please-manifest.json`. Merging
+that PR publishes the corresponding `v<version>` GitHub release. Dispatch the
+workflow manually to refresh the PR; it also runs on pushes to `main`.
+Historical `0.x` tags and changelog entries retain their original versions.
+
+`tools/bcr_release.cjs` wraps the pinned release-please library. Its BCR version
+adapter preserves `.bcr.N` throughout tag, PR, changelog, and manifest parsing,
+and orders revisions numerically. The custom Bazel strategy takes the next
+version from registry metadata, including upstream upgrades, rather than
+bumping the upstream version according to commit types or `Release-As` footers.
+An overlay-only release requires a new registry entry; the workflow does not
+republish the same version for later edits. Keep the adapter tests passing when
+upgrading release-please, because the adapter uses the library's internal
+`Version` and Bazel strategy modules. Run `npm test` to check this integration.
 
 ## GitHub Actions
 
