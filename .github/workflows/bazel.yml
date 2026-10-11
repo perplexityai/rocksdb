@@ -107,15 +107,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          bcr_compat_flags=(--incompatible_autoload_externally=)
+          if [[ "$USE_BAZEL_VERSION" == 8.* ]]; then
+            bcr_compat_flags+=(
+              --incompatible_config_setting_private_default_visibility
+              --incompatible_disable_starlark_host_transitions
+              --incompatible_disable_native_repo_rules
+              --incompatible_strict_action_env
+            )
+          fi
           bazel test \
             --registry="file://$GITHUB_WORKSPACE/bcr" \
             --registry=https://bcr.bazel.build \
-            --incompatible_autoload_externally= \
             --compilation_mode=fastbuild \
             --copt=-O1 \
             --nocache_test_results \
             --flaky_test_attempts=1 \
             --test_output=errors \
+            "${bcr_compat_flags[@]}" \
             @rocksdb//:table_table_test @rocksdb//:db_db_wal_test \
             @rocksdb//:util_compression_test
       - name: Collect upstream test logs

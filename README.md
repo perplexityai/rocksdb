@@ -191,7 +191,8 @@ compaction-service cases whose custom objects fail remote compaction on macOS.
 The overlay CI also runs the complete table, WAL, and compression suites natively on macOS
 ARM64 with Bazel 8 and 9. These jobs use `-O1` with assertions enabled, bypass
 cached test results, and run each suite once so timeouts remain visible. Test
-logs and XML results are uploaded even when a suite fails. On macOS, table tests
+logs and XML results are uploaded even when a suite fails. Bazel 8 uses the
+incompatible flags checked by BCR. On macOS, table tests
 run in 16 shards and WAL and compression tests in four shards, retaining every
 GoogleTest case. These suites use one-hour timeouts. Compression joins the slow
 suite timeout list on every platform because Bazel test timeouts cannot be
