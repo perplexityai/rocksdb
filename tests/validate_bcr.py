@@ -52,6 +52,9 @@ def validate_version(module_name: str, version_dir: pathlib.Path) -> None:
     expected_identity = f'name = "{module_name}"'
     if expected_identity not in module_contents:
         fail(f"{module_name}: MODULE.bazel has wrong module name")
+    declared_version = re.search(r'\bversion\s*=\s*"([^"]+)"', module_contents)
+    if not declared_version or declared_version.group(1) != version_dir.name:
+        fail(f"{module_name}: MODULE.bazel version differs from {version_dir.name}")
     compatibility = re.search(
         r"bazel_compatibility\s*=\s*\[([^\]]*)\]", module_contents
     )
