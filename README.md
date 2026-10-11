@@ -132,7 +132,8 @@ upgrading release-please, because the adapter uses the library's internal
 
 [Buildkite pipeline](https://buildkite.com/perplexity/rocksdb) runs BCR consumption
 with Bazel 8.4.1 and 9.2.0, commit hooks, one distribution cross-build and native
-artifact smoke tests. GHA retains Linux ARM64 native coverage.
+artifact smoke tests. GHA retains Linux ARM64 native coverage and runs the complete
+macOS ARM64 table, WAL, and compression regression suites with Bazel 8 and 9.
 See [.buildkite/README.md](.buildkite/README.md) for queues, fork approval and cache policy.
 
 Release Please and BCR publishing stay on GHA, gated by the exact main Buildkite
@@ -177,6 +178,16 @@ failure during background compactions. The large table, WAL, iterator, and
 transaction suites have one-hour timeouts for slower CI runners. macOS presubmit
 uses `-O1` without `NDEBUG` to retain test hooks, and filters only the two
 compaction-service cases whose custom objects fail remote compaction on macOS.
+
+The overlay CI also runs the complete table, WAL, and compression suites natively on macOS
+ARM64 with Bazel 8 and 9. These jobs use `-O1` with assertions enabled, bypass
+cached test results, and run each suite once so timeouts remain visible. Test
+logs and XML results are uploaded even when a suite fails. Bazel 8 uses the
+incompatible flags checked by BCR. On macOS, table tests
+run in 16 shards and WAL and compression tests in four shards, retaining every
+GoogleTest case. These suites use one-hour timeouts. Compression joins the slow
+suite timeout list on every platform because Bazel test timeouts cannot be
+selected by platform. Other test targets retain their existing configuration.
 
 GoogleTest `1.17.0.bcr.2` loads the C++ rules explicitly for Bazel 9. The overlay
 also patches v11.8.1 to keep trie bitvector storage aligned under libc++, use
