@@ -102,7 +102,7 @@ jobs:
           cache-save: ${{ github.event_name == 'push' }}
           disk-cache: ${{ github.workflow }}-bcr-macos-arm64-${{ matrix.bazel }}
           repository-cache: true
-      - name: Test complete table and WAL suites
+      - name: Test complete table, WAL, and compression suites
         working-directory: tests/bcr
         shell: bash
         run: |
@@ -116,7 +116,8 @@ jobs:
             --nocache_test_results \
             --flaky_test_attempts=1 \
             --test_output=errors \
-            @rocksdb//:table_table_test @rocksdb//:db_db_wal_test
+            @rocksdb//:table_table_test @rocksdb//:db_db_wal_test \
+            @rocksdb//:util_compression_test
       - name: Collect upstream test logs
         if: always()
         working-directory: tests/bcr
