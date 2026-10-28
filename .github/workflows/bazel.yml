@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bazel: [8.4.1, 9.2.0]
+        bazel: [8.4.1, 9.2.0, 10.0.0rc2]
     env:
       USE_BAZEL_VERSION: ${{ matrix.bazel }}
     steps:

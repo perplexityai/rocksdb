@@ -63,7 +63,7 @@ bazel run -c opt --platforms=//bazel/platforms:linux_x64 \
 The consumer API is:
 
 ```starlark
-bazel_dep(name = "rocksdb", version = "11.8.1")
+bazel_dep(name = "rocksdb", version = "11.8.1.bcr.1")
 ```
 
 Depend on `@rocksdb//:rocksdb` from a `cc_library` or `cc_binary`.
@@ -71,14 +71,15 @@ Depend on `@rocksdb//:rocksdb` from a `cc_library` or `cc_binary`.
 The module name and repository label are both `rocksdb`; no `repo_name` mapping
 is needed. Select this overlay through its registry when consuming it.
 
-`bcr/modules/rocksdb/11.8.1` contains the registry module, upstream archive
+`bcr/modules/rocksdb/11.8.1.bcr.1` contains the registry module, upstream archive
 checksum, overlay file checksums, and Linux x86_64/ARM64 and macOS ARM64 presubmit matrix.
 The published module uses the consumer's C++ toolchain; LLVM toolchains are
 registered only in the development harness. The overlay supports Linux and macOS.
 The development harness patches jemalloc's build-time `nm` and `awk` actions
 for hermetic LLVM; consumers using that toolchain need the same fixes until
 they reach the jemalloc BCR module.
-Version `11.8.1` is published in the public BCR.
+Version `11.8.1` is published in the public BCR. Revision `11.8.1.bcr.1`
+adds Bazel 10 compatibility without changing the upstream RocksDB source.
 
 To validate it through the local registry:
 
@@ -134,9 +135,9 @@ upgrading release-please, because the adapter uses the library's internal
 ## CI and releases
 
 [Buildkite pipeline](https://buildkite.com/perplexity/rocksdb) runs BCR consumption
-with Bazel 8.4.1 and 9.2.0, commit hooks, one distribution cross-build and native
+with Bazel 8.4.1, 9.2.0, and 10.0.0rc2, commit hooks, one distribution cross-build and native
 artifact smoke tests. GHA retains Linux ARM64 native coverage and runs the complete
-macOS ARM64 table, WAL, and compression regression suites with Bazel 8 and 9.
+macOS ARM64 table, WAL, and compression regression suites with those Bazel versions.
 See [.buildkite/README.md](.buildkite/README.md) for queues, fork approval and cache policy.
 
 Release Please and BCR publishing stay on GHA, gated by the exact main Buildkite
@@ -183,7 +184,7 @@ uses `-O1` without `NDEBUG` to retain test hooks, and filters only the two
 compaction-service cases whose custom objects fail remote compaction on macOS.
 
 The overlay CI also runs the complete table, WAL, and compression suites natively on macOS
-ARM64 with Bazel 8 and 9. These jobs use `-O1` with assertions enabled, bypass
+ARM64 with Bazel 8, 9, and 10.0.0rc2. These jobs use `-O1` with assertions enabled, bypass
 cached test results, and run each suite once so timeouts remain visible. Test
 logs and XML results are uploaded even when a suite fails. Bazel 8 uses the
 incompatible flags checked by BCR. On macOS, table tests

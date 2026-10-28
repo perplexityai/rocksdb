@@ -62,8 +62,13 @@ def validate_version(module_name: str, version_dir: pathlib.Path) -> None:
         re.findall(r'"([^"]*)"', compatibility.group(1))
         if compatibility else []
     )
-    if supported != [">=8.0.0", "<10.0.0"]:
-        fail(f"{module_name}: overlays require Bazel 8 and 9 compatibility")
+    expected = (
+        [">=8.0.0", "<10.0.0"]
+        if version_dir.name == "11.8.1"
+        else [">=8.0.0"]
+    )
+    if supported != expected:
+        fail(f"{module_name}: unexpected Bazel compatibility for {version_dir.name}")
 
     source = json.loads((version_dir / "source.json").read_text())
     for kind in ("overlay", "patches"):
