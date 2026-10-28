@@ -74,9 +74,13 @@ config_setting(
 
 # Internal headers must use the same feature and OS macros in library and tests.
 _ROCKSDB_BUILD_DEFINES = [
+    "NDEBUG",
     "ROCKSDB_USE_RTTI",
     "ROCKSDB_JEMALLOC",
 ] + select({
+    "@platforms//os:windows": [],
+    "//conditions:default": ["HAVE_UINT128_EXTENSION"],
+}) + select({
     ":with_bzip2_setting": ["BZIP2"],
     "//conditions:default": [],
 }) + select({
