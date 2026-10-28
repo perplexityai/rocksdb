@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Stage one checked-in module version in a Bazel registry checkout."""
+"""Materialize one RocksDB version from the maintained BCR overlay."""
 
 import argparse
+import base64
+import hashlib
 import json
 import pathlib
 import re
 import shutil
-
 
 VERSION_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*$")
 
@@ -15,22 +16,28 @@ def _read_json(path: pathlib.Path) -> dict:
     return json.loads(path.read_text())
 
 
+def _integrity(path: pathlib.Path) -> str:
+    digest = hashlib.sha256(path.read_bytes()).digest()
+    return "sha256-" + base64.b64encode(digest).decode()
+
+
+def _stamp_module(template: str, version: str) -> str:
+    marker = 'version = ""'
+    if template.count(marker) != 1:
+        raise ValueError("BCR MODULE.bazel needs one blank version")
+    return template.replace(marker, f'version = "{version}"')
+
+
 def stage_entry(
     source_registry: pathlib.Path,
     target_registry: pathlib.Path,
     module: str,
     version: str,
 ) -> pathlib.Path:
-    if not VERSION_PATTERN.fullmatch(version):
-        raise ValueError(f"invalid module version: {version}")
+    if module != "rocksdb" or not VERSION_PATTERN.fullmatch(version):
+        raise ValueError(f"invalid module or version: {module}@{version}")
 
-    source_module = source_registry / "modules" / module
-    source_version = source_module / version
-    source_metadata_path = source_module / "metadata.json"
-    if not source_version.is_dir():
-        raise ValueError(f"missing source entry: {source_version}")
-
-    source_metadata = _read_json(source_metadata_path)
+    source_metadata = _read_json(source_registry / "metadata.json")
     if version not in source_metadata["versions"]:
         raise ValueError(f"{module}@{version} missing from source metadata")
 
@@ -43,8 +50,30 @@ def stage_entry(
     if target_version.exists() or version in target_metadata.get("versions", []):
         raise ValueError(f"{module}@{version} already exists in target registry")
 
+    template = (source_registry / "MODULE.bazel").read_text()
+    if any(call in template for call in ("_override(", "register_toolchains(")):
+        raise ValueError("published MODULE.bazel contains development-only calls")
+    published_module = _stamp_module(template, version)
+    source = _read_json(source_registry / "source.json")
+
     target_module.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source_version, target_version)
+    shutil.copytree(source_registry / "overlay", target_version / "overlay")
+    shutil.copytree(source_registry / "patches", target_version / "patches")
+    (target_version / "MODULE.bazel").write_text(published_module)
+    (target_version / "overlay" / "MODULE.bazel").write_text(published_module)
+    shutil.copyfile(source_registry / "presubmit.yml", target_version / "presubmit.yml")
+    source["overlay"] = {
+        path.relative_to(target_version / "overlay").as_posix(): _integrity(path)
+        for path in sorted((target_version / "overlay").rglob("*"))
+        if path.is_file()
+    }
+    source["patch_strip"] = 1
+    source["patches"] = {
+        path.relative_to(target_version / "patches").as_posix(): _integrity(path)
+        for path in sorted((target_version / "patches").rglob("*"))
+        if path.is_file()
+    }
+    (target_version / "source.json").write_text(json.dumps(source, indent=4) + "\n")
 
     metadata = dict(source_metadata)
     metadata["versions"] = [*target_metadata.get("versions", []), version]
@@ -63,7 +92,6 @@ def main() -> int:
     parser.add_argument("--module", required=True)
     parser.add_argument("--version", required=True)
     args = parser.parse_args()
-
     staged = stage_entry(
         args.source_registry,
         args.target_registry,

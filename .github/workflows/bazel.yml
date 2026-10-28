@@ -76,8 +76,14 @@ jobs:
               --incompatible_strict_action_env
             )
           fi
+          registry=$(mktemp -d)
+          trap 'rm -rf "$registry"' EXIT
+          version=$(python3 -c 'import json; print(json.load(open("../../bcr/metadata.json"))["versions"][-1])')
+          python3 ../../tools/stage_bcr_entry.py \
+            --source-registry ../../bcr --target-registry "$registry" \
+            --module rocksdb --version "$version"
           bazel test \
-            --registry="file://$GITHUB_WORKSPACE/bcr" \
+            --registry="file://$registry" \
             --registry=https://bcr.bazel.build \
             --compilation_mode=fastbuild \
             --copt=-O1 \

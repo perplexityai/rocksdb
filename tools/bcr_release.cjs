@@ -81,7 +81,7 @@ function registerBcrStrategy(target, metadata = {versions: [target.toString()]})
 }
 
 async function run(github, branch) {
-  const contents = await github.getFileContentsOnBranch('bcr/modules/rocksdb/metadata.json', branch);
+  const contents = await github.getFileContentsOnBranch('bcr/metadata.json', branch);
   const metadata = JSON.parse(contents.parsedContent);
   const target = selectVersion(metadata);
   registerBcrStrategy(target, metadata);
@@ -93,7 +93,7 @@ async function run(github, branch) {
   if (!current || target.compare(current) < 0) {
     throw new Error(`Registry version ${target} is behind the release manifest ${current}`);
   }
-  // Only release merged release PRs whose version is a checked-in registry entry.
+  // Only release versions proposed in bcr/metadata.json.
   await manifest.createReleases();
   if (target.compare(current) === 0) {
     console.log(`No newer BCR entry than ${current}; no release PR needed`);

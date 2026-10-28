@@ -71,8 +71,9 @@ Depend on `@rocksdb//:rocksdb` from a `cc_library` or `cc_binary`.
 The module name and repository label are both `rocksdb`; no `repo_name` mapping
 is needed. Select this overlay through its registry when consuming it.
 
-`bcr/modules/rocksdb/11.8.1.bcr.1` contains the registry module, upstream archive
-checksum, overlay file checksums, and Linux x86_64/ARM64 and macOS ARM64 presubmit matrix.
+`bcr/overlay`, `bcr/patches`, and `bcr/MODULE.bazel` are the single maintained
+source. The publisher stamps a versioned BCR entry with checksums and presubmit
+configuration. Published entries remain immutable in BCR.
 The published module uses the consumer's C++ toolchain; LLVM toolchains are
 registered only in the development harness. The overlay supports Linux and macOS.
 The development harness patches jemalloc's build-time `nm` and `awk` actions
@@ -80,22 +81,23 @@ for hermetic LLVM; consumers using that toolchain need the same fixes until
 they reach the jemalloc BCR module.
 Version `11.8.1` is published in the public BCR. Revision `11.8.1.bcr.1`
 adds Bazel 10 compatibility without changing the upstream RocksDB source.
-The revision links unchanged overlay files to `11.8.1` in this repo. Publishing
-copies them into the new BCR entry as regular files.
 
 To validate it through the local registry:
 
 ```sh
 python3 tests/validate_bcr.py
+registry=$(mktemp -d)
+python3 tools/stage_bcr_entry.py --source-registry bcr \
+  --target-registry "$registry" --module rocksdb --version 11.8.1.bcr.1
 cd tests/bcr
-bazel build --registry=file://$(realpath ../../bcr) \
+bazel build --registry="file://$registry" \
   --registry=https://bcr.bazel.build @rocksdb//:rocksdb //:smoke_test
-bazel run --registry=file://$(realpath ../../bcr) \
+bazel run --registry="file://$registry" \
   --registry=https://bcr.bazel.build //:smoke_test -- /tmp/rocksdb-bcr-new
 ```
 
-After changing overlay files, run `python3 tools/update_bcr_integrity.py`
-and `python3 tests/validate_bcr.py`.
+After changing overlay files, run `python3 tests/validate_bcr.py`. Staging
+computes checksums from maintained files.
 The library source list follows upstream `CMakeLists.txt`; review it when
 upgrading RocksDB. Build version metadata is expanded deterministically without
 consulting the host Git checkout or current time.
@@ -105,29 +107,28 @@ consulting the host Git checkout or current time.
 The repository includes Watchman's Conventional Commit hooks. Install them with
 `npm ci` (Node.js 22 or newer).
 
-Release versions match the checked-in BCR module version. The first overlay for
-an upstream release uses its version, such as `11.8.1`; subsequent overlay-only
+Release versions match the proposal in `bcr/metadata.json`. The first overlay
+for an upstream release uses its version, such as `11.8.1`; overlay-only
 revisions use `11.8.1.bcr.1`, `11.8.1.bcr.2`, and so on. An upstream upgrade
 starts again at the new upstream version. Published registry entries are
-immutable: add a new version directory and append it to `metadata.json` for
-each revision, updating both registry and overlay `MODULE.bazel` files and
-their checksums. Update the development module, overlay paths, and consumer
-example to the new version as well; the upstream archive URL and strip prefix
-continue to use the upstream version without the `.bcr.N` suffix.
+immutable: append the proposed version to `bcr/metadata.json` and update the
+development module and consumer example. The publisher generates the new entry
+from `bcr/`; the upstream archive URL and strip prefix continue to use the
+upstream version without the `.bcr.N` suffix.
 
 The `Release Please` workflow opens or updates a release PR when the newest
-checked-in BCR version is newer than `.release-please-manifest.json`. Merging
+proposed BCR version is newer than `.release-please-manifest.json`. Merging
 that PR publishes the corresponding `v<version>` GitHub release. Dispatch the
 workflow manually to refresh the PR; it also runs on pushes to `main`.
 The release manifest starts at `11.8.1`, which was published directly to BCR;
-that version does not require a GitHub release PR. A newer checked-in BCR entry
+that version does not require a GitHub release PR. A newer proposed BCR version
 will start the next release. Historical `0.x` tags and changelog entries retain
 their original versions.
 
 `tools/bcr_release.cjs` wraps the pinned release-please library. Its BCR version
 adapter preserves `.bcr.N` throughout tag, PR, changelog, and manifest parsing,
 and orders revisions numerically. The custom Bazel strategy takes the next
-version from registry metadata, including upstream upgrades, rather than
+version from `bcr/metadata.json`, including upstream upgrades, rather than
 bumping the upstream version according to commit types or `Release-As` footers.
 An overlay-only release requires a new registry entry; the workflow does not
 republish the same version for later edits. Keep the adapter tests passing when
@@ -164,8 +165,10 @@ Upstream GoogleTest targets and their shared test library are available in the
 registry module. Run them without `-c opt`, because RocksDB's assertion-enabled
 test hooks are removed by `NDEBUG` in optimized builds:
 
+Use the registry staged above:
+
 ```sh
-bazel test --registry=file://$(realpath ../../bcr) \
+bazel test --registry="file://$registry" \
   --registry=https://bcr.bazel.build \
   --test_arg='--gtest_filter=-PrefetchTest/PrefetchTest.Basic/*' @rocksdb//:all
 ```

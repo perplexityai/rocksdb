@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate checked-in BCR overlay entries without network access."""
+"""Validate the maintained overlay by staging its next BCR entry."""
 
 import base64
 import hashlib
@@ -7,131 +7,60 @@ import json
 import pathlib
 import re
 import sys
-
+import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-MODULES = ROOT / "bcr" / "modules"
-FORBIDDEN_MODULE_CALLS = (
-    "archive_override(",
-    "git_override(",
-    "local_path_override(",
-    "multiple_version_override(",
-    "register_toolchains(",
-    "single_version_override(",
-)
+sys.path.insert(0, str(ROOT))
+from tools.stage_bcr_entry import stage_entry
 
 
 def integrity(path: pathlib.Path) -> str:
-    digest = hashlib.sha256(path.read_bytes()).digest()
-    return "sha256-" + base64.b64encode(digest).decode()
-
-
-def fail(message: str) -> None:
-    raise ValueError(message)
-
-
-def module_dependencies(module_file: pathlib.Path) -> list[tuple[str, str]]:
-    contents = module_file.read_text()
-    return re.findall(
-        r'bazel_dep\(\s*name\s*=\s*"([^"]+)"\s*,\s*version\s*=\s*"([^"]+)"',
-        contents,
-    )
-
-
-def validate_version(module_name: str, version_dir: pathlib.Path) -> None:
-    registry_module = version_dir / "MODULE.bazel"
-    overlay_module = version_dir / "overlay" / "MODULE.bazel"
-    if registry_module.read_bytes() != overlay_module.read_bytes():
-        fail(f"{module_name}: registry and overlay MODULE.bazel differ")
-
-    module_contents = registry_module.read_text()
-    for call in FORBIDDEN_MODULE_CALLS:
-        if call in module_contents:
-            fail(f"{module_name}: published MODULE.bazel contains {call}")
-
-    expected_identity = f'name = "{module_name}"'
-    if expected_identity not in module_contents:
-        fail(f"{module_name}: MODULE.bazel has wrong module name")
-    declared_version = re.search(r'\bversion\s*=\s*"([^"]+)"', module_contents)
-    if not declared_version or declared_version.group(1) != version_dir.name:
-        fail(f"{module_name}: MODULE.bazel version differs from {version_dir.name}")
-    compatibility = re.search(
-        r"bazel_compatibility\s*=\s*\[([^\]]*)\]", module_contents
-    )
-    supported = (
-        re.findall(r'"([^"]*)"', compatibility.group(1))
-        if compatibility else []
-    )
-    expected = (
-        [">=8.0.0", "<10.0.0"]
-        if version_dir.name == "11.8.1"
-        else [">=8.0.0"]
-    )
-    if supported != expected:
-        fail(f"{module_name}: unexpected Bazel compatibility for {version_dir.name}")
-
-    source = json.loads((version_dir / "source.json").read_text())
-    for kind in ("overlay", "patches"):
-        base = version_dir / kind
-        listed = source.get(kind, {})
-        actual_files = (
-            {
-                path.relative_to(base).as_posix()
-                for path in base.rglob("*")
-                if path.is_file()
-            }
-            if base.exists()
-            else set()
-        )
-        if actual_files != set(listed):
-            fail(
-                f"{module_name}: {kind} inventory differs: "
-                f"files={sorted(actual_files)}, metadata={sorted(listed)}"
-            )
-        for relative_path, expected in listed.items():
-            path = base / relative_path
-            if not path.is_file():
-                fail(f"{module_name}: missing {kind} file {relative_path}")
-            actual = integrity(path)
-            if actual != expected:
-                fail(
-                    f"{module_name}: stale integrity for {kind}/{relative_path}: "
-                    f"{actual}"
-                )
+    return "sha256-" + base64.b64encode(hashlib.sha256(path.read_bytes()).digest()).decode()
 
 
 def main() -> int:
-    available: dict[str, set[str]] = {}
-    dependencies: dict[str, list[tuple[str, str]]] = {}
+    source = ROOT / "bcr"
+    metadata = json.loads((source / "metadata.json").read_text())
+    version = metadata["versions"][-1]
+    template = (source / "MODULE.bazel").read_text()
+    if template != (source / "overlay/MODULE.bazel").read_text():
+        raise ValueError("registry and overlay MODULE.bazel templates differ")
+    if '">=8.0.0"' not in template or '"<10.0.0"' in template:
+        raise ValueError("overlay must support Bazel 8 or newer")
 
-    for module_dir in sorted(
-        path
-        for path in MODULES.iterdir()
-        if path.is_dir() and (path / "metadata.json").is_file()
-    ):
-        metadata = json.loads((module_dir / "metadata.json").read_text())
-        versions = set(metadata["versions"])
-        available[module_dir.name] = versions
-        for version in versions:
-            version_dir = module_dir / version
-            if not version_dir.is_dir():
-                fail(f"{module_dir.name}: missing version directory {version}")
-            validate_version(module_dir.name, version_dir)
-            dependencies[module_dir.name] = module_dependencies(
-                version_dir / "MODULE.bazel"
-            )
+    pin = json.loads((source / "source.json").read_text())
+    development = (ROOT / "MODULE.bazel").read_text()
+    archive_hash = base64.b64decode(pin["integrity"].removeprefix("sha256-")).hex()
+    if not all(value in development for value in (pin["url"], pin["strip_prefix"], archive_hash)):
+        raise ValueError("development source pin differs from BCR source pin")
+    if not re.search(r'version\s*=\s*"' + re.escape(version) + r'"', development):
+        raise ValueError("development module version differs from BCR proposal")
 
-    for module_name, deps in dependencies.items():
-        for dependency_name, dependency_version in deps:
-            if dependency_name in available and dependency_version not in available[
-                dependency_name
-            ]:
-                fail(
-                    f"{module_name}: local dependency {dependency_name}@"
-                    f"{dependency_version} is missing"
-                )
-
-    print("BCR overlays valid: " + ", ".join(sorted(available)))
+    with tempfile.TemporaryDirectory() as temp:
+        registry = pathlib.Path(temp)
+        existing = registry / "modules/rocksdb"
+        (existing / "11.8.1").mkdir(parents=True)
+        (existing / "metadata.json").write_text(
+            json.dumps({"versions": ["11.8.1"], "yanked_versions": {}})
+        )
+        staged = stage_entry(source, registry, "rocksdb", version)
+        versions = json.loads((existing / "metadata.json").read_text())["versions"]
+        if versions != ["11.8.1", version] or not (existing / "11.8.1").is_dir():
+            raise ValueError("staging changed published version")
+        module = (staged / "MODULE.bazel").read_bytes()
+        if module != (staged / "overlay/MODULE.bazel").read_bytes():
+            raise ValueError("staged module files differ")
+        manifest = json.loads((staged / "source.json").read_text())
+        for kind in ("overlay", "patches"):
+            listed = manifest[kind]
+            files = {
+                path.relative_to(staged / kind).as_posix(): integrity(path)
+                for path in (staged / kind).rglob("*")
+                if path.is_file()
+            }
+            if listed != files:
+                raise ValueError(f"staged {kind} integrity differs")
+    print(f"BCR overlay valid: rocksdb@{version}")
     return 0
 
 
