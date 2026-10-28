@@ -26,6 +26,18 @@ steps:
   - buildkite-agent cache save --registry oss-ci-v2 --name bazel
   timeout_in_minutes: 120
   artifact_paths: tests/bcr/bazel-testlogs/**/test.log;tests/bcr/bazel-testlogs/**/test.xml
+- label: BCR overlay / Bazel 10.0.0rc2
+  key: bcr-10-0-0rc2
+  agents:
+    queue: oss
+  env:
+    USE_BAZEL_VERSION: 10.0.0rc2
+  command:
+  - buildkite-agent cache restore --registry oss-ci-v2 --name bazel
+  - bash .buildkite/bcr.sh
+  - buildkite-agent cache save --registry oss-ci-v2 --name bazel
+  timeout_in_minutes: 120
+  artifact_paths: tests/bcr/bazel-testlogs/**/test.log;tests/bcr/bazel-testlogs/**/test.xml
 - label: Verify hooks and release adapter
   key: verify-hooks
   command: bash .buildkite/verify-hooks.sh
@@ -59,6 +71,7 @@ steps:
   depends_on:
   - bcr-8-4-1
   - bcr-9-2-0
+  - bcr-10-0-0rc2
   - verify-hooks
   - smoke-linux-amd64
   - smoke-darwin-arm64

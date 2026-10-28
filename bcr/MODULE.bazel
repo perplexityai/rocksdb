@@ -1,9 +1,8 @@
 module(
     name = "rocksdb",
-    version = "11.8.1",
+    version = "",
     bazel_compatibility = [
         ">=8.0.0",
-        "<10.0.0",
     ],
 )
 

@@ -2,17 +2,23 @@
 set -euo pipefail
 source .buildkite/setup.sh
 python3 tests/validate_bcr.py
+registry=$(mktemp -d)
+trap 'rm -rf "$registry"' EXIT
+version=$(python3 -c 'import json; print(json.load(open("bcr/metadata.json"))["versions"][-1])')
+python3 tools/stage_bcr_entry.py \
+  --source-registry bcr --target-registry "$registry" \
+  --module rocksdb --version "$version"
 cd tests/bcr
 set -euo pipefail
 bazel build -c opt \
-  --registry="file://$GITHUB_WORKSPACE/bcr" \
+  --registry="file://$registry" \
   --registry=https://bcr.bazel.build \
   --incompatible_autoload_externally=+@rules_cc \
   @rocksdb//:rocksdb //:smoke_test
 
 set -euo pipefail
 bazel test \
-  --registry="file://$GITHUB_WORKSPACE/bcr" \
+  --registry="file://$registry" \
   --registry=https://bcr.bazel.build \
   --incompatible_autoload_externally= \
   --copt=-O1 \
@@ -23,7 +29,7 @@ bazel test \
 
 set -euo pipefail
 bazel test \
-  --registry="file://$GITHUB_WORKSPACE/bcr" \
+  --registry="file://$registry" \
   --registry=https://bcr.bazel.build \
   --incompatible_autoload_externally= \
   --copt=-O1 \

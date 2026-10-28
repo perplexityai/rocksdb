@@ -28,7 +28,8 @@
         "github:facebook/rocksdb"
     ],
     "versions": [
-        "11.8.1"
+        "11.8.1",
+        "11.8.1.bcr.1"
     ],
     "yanked_versions": {}
 }
