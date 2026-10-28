@@ -80,6 +80,8 @@ for hermetic LLVM; consumers using that toolchain need the same fixes until
 they reach the jemalloc BCR module.
 Version `11.8.1` is published in the public BCR. Revision `11.8.1.bcr.1`
 adds Bazel 10 compatibility without changing the upstream RocksDB source.
+The revision links unchanged overlay files to `11.8.1` in this repo. Publishing
+copies them into the new BCR entry as regular files.
 
 To validate it through the local registry:
 
