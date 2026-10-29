@@ -59,6 +59,13 @@ function registerBcrStrategy(target, metadata = {versions: [target.toString()]})
     },
   }));
   class BcrBazel extends Bazel {
+    async buildReleaseNotes(commits, version, tag, latestRelease, rawCommits) {
+      // Manifest-only baselines have no tag for GitHub to compare against.
+      return super.buildReleaseNotes(
+        commits, version, tag, latestRelease?.sha ? latestRelease : undefined, rawCommits,
+      );
+    }
+
     // Do not allow Release-As commit footers to bypass registry selection.
     async buildNewVersion(commits, latestRelease) {
       return this.versioningStrategy.bump(
