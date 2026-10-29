@@ -89,6 +89,37 @@ test('registry selection uses the newest entry and rejects a yanked latest versi
   assert.throws(() => selectVersion({versions: []}), /must exist/);
 });
 
+test('manifest baseline without a GitHub tag still opens the next BCR release PR', async () => {
+  let created;
+  const github = {
+    repository: {owner: 'perplexityai', repo: 'rocksdb', defaultBranch: 'main'},
+    async getFileContentsOnBranch() {
+      return {parsedContent: JSON.stringify({versions: ['11.8.1', '11.8.1.bcr.1']})};
+    },
+    async getFileJson(path) {
+      if (path === '.release-please-manifest.json') return {'.': '11.8.1'};
+      return require('../release-please-config.json');
+    },
+    async *pullRequestIterator() {},
+    async *releaseIterator() { yield {tagName: 'v0.2.1', sha: 'previous'}; },
+    async *tagIterator() { yield {name: 'v0.2.1', sha: 'previous'}; },
+    async *mergeCommitIterator() {
+      yield {sha: 'change', message: 'fix: update overlay', files: ['MODULE.bazel']};
+    },
+    async generateReleaseNotes(tag, branch, previousTag) {
+      assert.deepEqual([tag, branch, previousTag], ['v11.8.1.bcr.1', 'main', undefined]);
+      return '## Changes\n* Update overlay';
+    },
+    async createPullRequest(pr) {
+      created = pr;
+      return {...pr, number: 123};
+    },
+  };
+  await run(github, 'main');
+  assert.equal(created.title, 'chore(main): release 11.8.1.bcr.1');
+  assert.match(created.body.toString(), /Update overlay/);
+});
+
 test('real release-please generates a BCR PR, file updates, and a stable release tag', async () => {
   const target = BcrVersion.parse('11.8.1.bcr.10');
   registerBcrStrategy(target);
