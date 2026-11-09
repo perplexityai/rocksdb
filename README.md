@@ -137,18 +137,15 @@ upgrading release-please, because the adapter uses the library's internal
 
 ## CI and releases
 
-[Buildkite pipeline](https://buildkite.com/perplexity/rocksdb) runs BCR consumption
-with Bazel 8.4.1, 9.2.0, and 10.0.0rc2, commit hooks, one distribution cross-build and native
-artifact smoke tests. GHA retains Linux ARM64 native coverage and runs the complete
-macOS ARM64 table, WAL, and compression regression suites with those Bazel versions.
-See [.buildkite/README.md](.buildkite/README.md) for queues, fork approval and cache policy.
+[GitHub Actions](https://github.com/perplexityai/rocksdb/actions) runs BCR
+consumption with Bazel 8.4.1, 9.2.0, and 10.0.0rc2, commit hooks, distribution
+cross-builds, and native artifact smoke tests. Linux ARM64 coverage and complete
+macOS ARM64 table, WAL, and compression suites remain enabled.
 
-Release Please and BCR publishing stay on GHA, gated by the exact main Buildkite
-commit. Trusted tag builds stage optimized assets on GitHub using short-lived
-workflow-authorized tokens. The GHA `bazel-opt` workflow verifies those artifacts,
-runs their Linux ARM64 smoke test and publishes final assets without rebuilding.
-Manual publishing requires an existing release tag. Existing `GH_RELEASE_TOKEN`
-and `BCR_PUBLISH_TOKEN` secrets stay on GHA.
+Release Please and BCR publishing require successful main CI at the exact commit.
+Release workflows build and verify distributions on GHA before uploading assets.
+Manual publishing requires an existing release tag. See
+[CI details](.github/ci/README.md).
 
 ## License
 

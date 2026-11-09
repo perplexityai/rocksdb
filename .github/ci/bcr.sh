@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source .buildkite/setup.sh
+source .github/ci/setup.sh
 python3 tests/validate_bcr.py
 registry=$(mktemp -d)
 trap 'rm -rf "$registry"' EXIT
