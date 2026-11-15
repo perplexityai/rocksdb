@@ -7,7 +7,7 @@
     "test": "node --test tests/bcr_release.test.cjs"
   },
   "devDependencies": {
-    "@commitlint/cli": "21.0.2",
+    "@commitlint/cli": "21.2.4",
     "lefthook": "2.1.9",
     "release-please": "17.11.2"
   },
